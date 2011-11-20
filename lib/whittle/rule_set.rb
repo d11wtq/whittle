@@ -2,7 +2,8 @@ module Whittle
   class RuleSet
     include Enumerable
 
-    def initialize
+    def initialize(name)
+      @name  = name
       @rules = []
     end
 
@@ -11,7 +12,7 @@ module Whittle
     end
 
     def [](*components)
-      Rule.new(*components).tap do |rule|
+      Rule.new(@name, *components).tap do |rule|
         @rules << rule
       end
     end
@@ -26,10 +27,30 @@ module Whittle
       nil
     end
 
-    def table_for_offset(offset)
-      @rules.inject([]) do |table, rule|
-        table + rule.table_for_offset(offset)
+    def build_parse_table(state, table, parser, seen = [])
+      return table if seen.include?([state, self])
+
+      seen << [state, self]
+
+      table[state] ||= {}
+      table.tap do
+        each do |rule|
+          rule.build_parse_table(state, table, parser, seen)
+        end
       end
+    end
+
+    # expr: (, expr, )
+    # expr: expr, +, expr
+    # expr: expr, *, expr
+    # expr: num
+
+    def terminal?
+      @rules.length == 1 && @rules.first.terminal?
+    end
+
+    def nonterminal?
+      !terminal?
     end
   end
 end

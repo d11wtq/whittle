@@ -8,15 +8,24 @@ module Whittle
       def rule(name)
         raise ArgumentError, "Parser.rule requires a block, but none was given" unless block_given?
 
-        RuleSet.new.tap do |rule_set|
+        RuleSet.new(name).tap do |rule_set|
           rules[name] = rule_set
           yield rule_set
         end
       end
 
-      def start(name = nil)
-        @start = name unless name.nil?
-        @start
+      def start(name)
+        rule(:*) do |r|
+          r[name].as { |prog| prog }
+        end
+      end
+
+      def initial_state
+        [rules[:*], 0].hash
+      end
+
+      def parse_table
+        rules[:*].build_parse_table(initial_state, {}, self)
       end
     end
 
@@ -25,32 +34,56 @@ module Whittle
     end
 
     def parse(input)
-      raise "Undefined start rule #{self.class.start}" unless rules.key?(self.class.start)
+      raise "Undefined start rule" unless rules.key?(:*)
 
-      rule      = rules[self.class.start]
-      token     = nil
-      lookahead = nil
-      root      = {
-        :name => self.class.start,
-        :rule => nil,
-        :args => []
-      }
-      stack = [root]
+      table  = self.class.parse_table
+      states = [self.class.initial_state]
+      args   = []
 
       require 'pp'
+      #pp table
 
-      lex(input) do |received|
-        token     = lookahead
-        lookahead = received
-        next if token.nil?
+      lex(input) do |token|
+        input = token
 
-        pp rule.table_for_offset(stack.last[:args].length)
+        catch(:match) do
+          loop do
+            state = table[states.last]
 
-        stack.last[:args] << token[:value]
-        stack.last[:rule] = rules[token[:name]].first
+            if instruction = (state[input[:name]] || state[input[:value]] || state[nil])
+              case instruction[:action]
+                when :shift
+                  input[:args] = [input.delete(:value)]
+                  states << instruction[:state]
+                  args   << input
+                  throw :match
+                when :reduce
+                  sym    = {
+                    :rule => instruction[:rule],
+                    :name => instruction[:rule].name,
+                    :line => 0,
+                    :args => args.pop(instruction[:rule].components.length)
+                  }
+                  sym[:line] = sym[:args].first[:line]
+                  states.pop(instruction[:rule].components.length)
+                  args << sym
+                  input = sym
+                  # FIXME: I don't believe this is the correct place for this
+                  throw :match if states.length == 1 && token[:name] == :$eof
+                when :goto
+                  input = token
+                  states << instruction[:state]
+              end
+            else
+              #pp args
+              pp states
+              parse_error(state, input)
+            end
+          end
+        end
       end
 
-      reduce(stack.pop)
+      reduce(args.pop)
     end
 
     def lex(input)
@@ -66,7 +99,21 @@ module Whittle
         end
       end
 
-      yield nil
+      yield ({ :name => :$eof, :line => line, :value => nil })
+    end
+
+    def parse_error(state, input)
+      message = <<-ERROR.gsub(/\n\s+/, " ").strip
+      Parse error:
+      expected
+      #{state.keys.map { |k| k.inspect }.join("; or ")}
+      but got
+      #{input[:name].inspect}
+      on line
+      #{input[:line]}
+      ERROR
+
+      raise message
     end
 
     private

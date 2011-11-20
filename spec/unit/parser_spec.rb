@@ -9,7 +9,6 @@ describe Whittle::Parser do
         end
 
         rule(:prog) do |r|
-          r[:prog, :char]
           r[:char]
         end
 
@@ -18,9 +17,7 @@ describe Whittle::Parser do
     end
 
     it "returns nil for all inputs" do
-      pending "I'm undecided on if this should be allowed"
-
-      ["a b c", "a (b) > *c"].each do |input|
+      ["a", "b"].each do |input|
         parser.new.parse(input).should be_nil
       end
     end
@@ -85,6 +82,37 @@ describe Whittle::Parser do
       it "returns the sum of the operands" do
         parser.new.parse("10+20").should == 30
       end
+    end
+  end
+
+  context "given a program with a self-referential rule" do
+    let(:parser) do
+      Class.new(Whittle::Parser) do
+        start(:expr)
+
+        rule(:expr) do |r|
+          r["(", :expr, ")"].as   { |_, expr, _| expr }
+          r[:expr, "*", :expr].as { |a, _, b| a * b }
+          r[:expr, "+", :expr].as { |a, _, b| a + b }
+          r[:int].as              { |int| int }
+        end
+
+        rule(:int) do |r|
+          r[/[0-9]+/].as { |int| Integer(int) }
+        end
+
+        rule(:operator) do |r|
+          r[/[\+\*]/].as { |c| c }
+        end
+
+        rule(:paren) do |r|
+          r[/[\(\)]/].as { |c| c }
+        end
+      end
+    end
+
+    it "handles the recursion gracefully" do
+      parser.new.parse("2*(3+1)+1").should == 9
     end
   end
 end

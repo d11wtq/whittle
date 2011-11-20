@@ -1,20 +1,62 @@
 module Whittle
   class Rule
+    NULL_ACTION = Proc.new { }
+
+    attr_reader :name
     attr_reader :action
     attr_reader :components
 
-    def initialize(*components)
-      @components = components.map do |c|
-        case c
-          when String then Regexp.new("^#{Regexp.escape(c)}")
-          when Regexp then Regexp.new("^#{c}")
-          when Symbol then c
-          else raise ArgumentError, "Unsupported rule component #{c.class}"
+    def initialize(name, *components)
+      @components = components
+      @action     = NULL_ACTION
+      @name       = name
+      @terminal   = components.length == 1 && !components.first.kind_of?(Symbol)
+
+      @components.each do |c|
+        unless Regexp === c || String === c || Symbol === c
+          raise ArgumentError, "Unsupported rule component #{c.class}"
+        end
+
+        if components.length > 1 && Regexp === c
+          raise ArgumentError, "Nonterminal rules (rules with more than one component) may not contain regular expressions"
         end
       end
 
-      @pattern = @components.first
-      @lexable = (@components.count == 1 && Regexp === @pattern)
+      pattern = @components.first
+
+      if @terminal
+        @pattern = if pattern.kind_of?(Regexp)
+          Regexp.new("^#{pattern}")
+        else
+          Regexp.new("^#{Regexp.escape(pattern)}")
+        end
+      end
+    end
+
+    def terminal?
+      @terminal
+    end
+
+    def build_parse_table(state, table, parser, seen, offset = 0)
+      new_offset = offset + 1
+      new_state  = [self, offset + 1].hash
+      sym        = components[offset]
+
+      unless sym.nil?
+        if Symbol === sym && parser.rules[sym].nonterminal?
+          table[state].merge!( sym => { :action => :goto, :state => new_state } )
+          parser.rules[sym].build_parse_table(state, table, parser, seen)
+        else
+          table[state].merge!( sym => { :action => :shift, :state => new_state } )
+        end
+
+        unless table.key?(new_state)
+          table[new_state] = {}
+          build_parse_table(new_state, table, parser, seen, new_offset)
+        end
+      else
+        table[state].merge!( sym => { :action => :reduce, :rule => self } )
+      end
     end
 
     def as(&block)
@@ -26,21 +68,18 @@ module Whittle
     end
 
     def scan(source, line)
-      return nil unless @lexable
+      return nil unless @terminal
 
       copy = source.dup
       if match = copy.slice!(@pattern)
         source.replace(copy)
         {
+          :rule      => self,
           :value     => match,
           :line      => line + ("~" + match + "~").lines.count - 1,
-          :discarded => @action.nil?
+          :discarded => @action.equal?(NULL_ACTION)
         }
       end
-    end
-
-    def table_for_offset(offset)
-      [{ :token => @components[offset], :lookahead => @components[offset + 1], :rule => self }]
     end
   end
 end
