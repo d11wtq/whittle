@@ -32,7 +32,6 @@ module Whittle
 
       seen << [state, self]
 
-      table[state] ||= {}
       table.tap do
         each do |rule|
           rule.build_parse_table(state, table, parser, seen)

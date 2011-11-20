@@ -38,6 +38,7 @@ module Whittle
     end
 
     def build_parse_table(state, table, parser, seen, offset = 0)
+      table[state] ||= {}
       new_offset = offset + 1
       new_state  = [self, offset + 1].hash
       sym        = components[offset]
@@ -52,20 +53,20 @@ module Whittle
             other_state = table[state][sym][:state]
             actions = table[other_state]
             p "State conflict for #{sym} when #{state}: existing actions are #{actions.inspect}"
+#            new_state = other_state
           end
           # / DEBUG
 
-          table[state].merge!( sym => { :action => :goto, :state => new_state } )
+          table[state][sym] = { :action => :goto,  :state => new_state }
         else
-          table[state].merge!( sym => { :action => :shift, :state => new_state } )
+          table[state][sym] = { :action => :shift, :state => new_state }
         end
 
         unless table.key?(new_state)
-          table[new_state] ||= {}
           build_parse_table(new_state, table, parser, seen, new_offset)
         end
       else
-        table[state].merge!( sym => { :action => :reduce, :rule => self } )
+        table[state][sym] = { :action => :reduce, :rule => self }
       end
     end
 
