@@ -44,14 +44,24 @@ module Whittle
 
       unless sym.nil?
         if Symbol === sym && parser.rules[sym].nonterminal?
-          table[state].merge!( sym => { :action => :goto, :state => new_state } )
           parser.rules[sym].build_parse_table(state, table, parser, seen)
+
+          # DEBUG (these rules need merging... and conflicts resolving)
+          p "If match #{sym.inspect} then go #{state} => #{new_state}"
+          if table[state].key?(sym)
+            other_state = table[state][sym][:state]
+            actions = table[other_state]
+            p "State conflict for #{sym} when #{state}: existing actions are #{actions.inspect}"
+          end
+          # / DEBUG
+
+          table[state].merge!( sym => { :action => :goto, :state => new_state } )
         else
           table[state].merge!( sym => { :action => :shift, :state => new_state } )
         end
 
         unless table.key?(new_state)
-          table[new_state] = {}
+          table[new_state] ||= {}
           build_parse_table(new_state, table, parser, seen, new_offset)
         end
       else

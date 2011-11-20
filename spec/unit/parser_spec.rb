@@ -91,8 +91,6 @@ describe Whittle::Parser do
         start(:expr)
 
         rule(:expr) do |r|
-          r["(", :expr, ")"].as   { |_, expr, _| expr }
-          r[:expr, "*", :expr].as { |a, _, b| a * b }
           r[:expr, "+", :expr].as { |a, _, b| a + b }
           r[:int].as              { |int| int }
         end
@@ -101,8 +99,8 @@ describe Whittle::Parser do
           r[/[0-9]+/].as { |int| Integer(int) }
         end
 
-        rule(:operator) do |r|
-          r[/[\+\*]/].as { |c| c }
+        rule(:plus) do |r|
+          r["+"].as { |c| c }
         end
 
         rule(:paren) do |r|
@@ -112,7 +110,37 @@ describe Whittle::Parser do
     end
 
     it "handles the recursion gracefully" do
-      parser.new.parse("2*(3+1)+1").should == 9
+      parser.new.parse("2+3+1").should == 6
+    end
+  end
+
+  context "given a program with a self-referential rule and logic grouping" do
+    let(:parser) do
+      Class.new(Whittle::Parser) do
+        start(:expr)
+
+        rule(:expr) do |r|
+          r["(", :expr, ")"].as   { |_, expr, _| expr }
+          r[:expr, "-", :expr].as { |a, _, b| a - b }
+          r[:int].as              { |int| int }
+        end
+
+        rule(:int) do |r|
+          r[/[0-9]+/].as { |int| Integer(int) }
+        end
+
+        rule(:operator) do |r|
+          r["-"].as { |c| c }
+        end
+
+        rule(:paren) do |r|
+          r[/[\(\)]/].as { |c| c }
+        end
+      end
+    end
+
+    it "parses the grouping first" do
+      parser.new.parse("2-(3-1)-1").should == -1
     end
   end
 end

@@ -14,18 +14,33 @@ module Whittle
         end
       end
 
-      def start(name)
-        rule(:*) do |r|
-          r[name].as { |prog| prog }
-        end
+      def start(name = nil)
+        @start = name unless name.nil?
+        @start
       end
 
       def initial_state
-        [rules[:*], 0].hash
+        prepare_start_rule
+        [rules[@start], 0].hash
       end
 
       def parse_table
-        rules[:*].build_parse_table(initial_state, {}, self)
+        prepare_start_rule
+        rules[@start].build_parse_table(initial_state, {}, self)
+      end
+
+      private
+
+      def prepare_start_rule
+        raise "Undefined start rule #{@start.inspect}" unless rules.key?(@start)
+
+        if rules[@start].terminal?
+          rule(:*) do |r|
+            r[@start].as { |prog| prog }
+          end
+
+          @start = :*
+        end
       end
     end
 
@@ -34,14 +49,12 @@ module Whittle
     end
 
     def parse(input)
-      raise "Undefined start rule" unless rules.key?(:*)
-
       table  = self.class.parse_table
       states = [self.class.initial_state]
       args   = []
 
       require 'pp'
-      #pp table
+      pp table
 
       lex(input) do |token|
         input = token
@@ -58,25 +71,27 @@ module Whittle
                   args   << input
                   throw :match
                 when :reduce
-                  sym    = {
+                  size = instruction[:rule].components.length
+                  sym  = {
                     :rule => instruction[:rule],
                     :name => instruction[:rule].name,
                     :line => 0,
-                    :args => args.pop(instruction[:rule].components.length)
+                    :args => args.pop(size)
                   }
                   sym[:line] = sym[:args].first[:line]
-                  states.pop(instruction[:rule].components.length)
-                  args << sym
+                  states.pop(size)
+                  args  << sym
                   input = sym
-                  # FIXME: I don't believe this is the correct place for this
-                  throw :match if states.length == 1 && token[:name] == :$eof
+                  # FIXME: I don't believe this is the correct place to keep this
+                  throw :match if states.length == 1 && token[:name] == :$end
                 when :goto
                   input = token
                   states << instruction[:state]
               end
             else
               #pp args
-              pp states
+              #pp token
+              #pp states
               parse_error(state, input)
             end
           end
@@ -99,7 +114,7 @@ module Whittle
         end
       end
 
-      yield ({ :name => :$eof, :line => line, :value => nil })
+      yield ({ :name => :$end, :line => line, :value => nil })
     end
 
     def parse_error(state, input)
