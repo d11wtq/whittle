@@ -1,6 +1,7 @@
 module Whittle
   class Rule
     NULL_ACTION = Proc.new { }
+    LEX_ACTION  = Proc.new { |input| input }
 
     attr_reader :name
     attr_reader :action
@@ -65,6 +66,10 @@ module Whittle
       tap do
         @action = block
       end
+    end
+
+    def as_value
+      as(&LEX_ACTION)
     end
 
     def scan(source, line)

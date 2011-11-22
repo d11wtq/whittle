@@ -27,7 +27,7 @@ describe Whittle::Parser do
     let(:parser) do
       Class.new(Whittle::Parser) do
         rule(:foo) do |r|
-          r["FOO"].as { |str| str }
+          r["FOO"].as_value
         end
 
         start(:foo)
@@ -71,7 +71,7 @@ describe Whittle::Parser do
         end
 
         rule(:default) do |r|
-          r[/./].as { |c| c }
+          r[/./].as_value
         end
 
         start(:sum)
@@ -92,7 +92,7 @@ describe Whittle::Parser do
 
         rule(:expr) do |r|
           r[:expr, "+", :expr].as { |a, _, b| a + b }
-          r[:int].as              { |int| int }
+          r[:int].as_value
         end
 
         rule(:int) do |r|
@@ -100,11 +100,11 @@ describe Whittle::Parser do
         end
 
         rule(:plus) do |r|
-          r["+"].as { |c| c }
+          r["+"].as_value
         end
 
         rule(:paren) do |r|
-          r[/[\(\)]/].as { |c| c }
+          r[/[\(\)]/].as_value
         end
       end
     end
@@ -114,7 +114,7 @@ describe Whittle::Parser do
     end
   end
 
-  context "given a program with a self-referential rule and logic grouping" do
+  context "given a program with a self-referential rule and logical grouping" do
     let(:parser) do
       Class.new(Whittle::Parser) do
         start(:expr)
@@ -122,25 +122,54 @@ describe Whittle::Parser do
         rule(:expr) do |r|
           r["(", :expr, ")"].as   { |_, expr, _| expr }
           r[:expr, "-", :expr].as { |a, _, b| a - b }
-          r[:int].as              { |int| int }
+          r[:int].as_value
         end
 
         rule(:int) do |r|
           r[/[0-9]+/].as { |int| Integer(int) }
         end
 
-        rule(:operator) do |r|
-          r["-"].as { |c| c }
+        rule(:minus) do |r|
+          r["-"].as_value
         end
 
         rule(:paren) do |r|
-          r[/[\(\)]/].as { |c| c }
+          r[/[\(\)]/].as_value
         end
       end
     end
 
     it "parses the grouping first" do
       parser.new.parse("2-(3-1)-1").should == -1
+    end
+  end
+
+  context "given a program that skips tokens" do
+    let(:parser) do
+      Class.new(Whittle::Parser) do
+        start(:expr)
+
+        rule(:wsp) do |r|
+          r[/\s+/]
+        end
+
+        rule(:expr) do |r|
+          r[:expr, "-", :expr].as { |a, _, b| a - b }
+          r[:int].as_value
+        end
+
+        rule(:int) do |r|
+          r[/[0-9]+/].as { |int| Integer(int) }
+        end
+
+        rule(:minus) do |r|
+          r["-"].as_value
+        end
+      end
+    end
+
+    it "reads the input excluding the skipped tokens" do
+      parser.new.parse("6 - 3 - 1").should == 2
     end
   end
 end
