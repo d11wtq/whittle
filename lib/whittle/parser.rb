@@ -54,7 +54,7 @@ module Whittle
       args   = []
 
       require 'pp'
-      pp table
+      #pp table
 
       lex(input) do |token|
         input = token
@@ -63,7 +63,7 @@ module Whittle
           loop do
             state = table[states.last]
 
-            if instruction = (state[input[:name]] || state[input[:value]] || state[nil])
+            if instruction = (state[nil] || state[input[:name]] || state[input[:value]])
               case instruction[:action]
                 when :shift
                   input[:args] = [input.delete(:value)]
@@ -97,7 +97,7 @@ module Whittle
           end
         end
       end
-
+      #pp args
       reduce(args.pop)
     end
 
