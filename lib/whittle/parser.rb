@@ -63,7 +63,7 @@ module Whittle
           loop do
             state = table[states.last]
 
-            if instruction = (state[nil] || state[input[:name]] || state[input[:value]])
+            if instruction = (state[input[:name]] || state[input[:value]] || state[nil])
               case instruction[:action]
                 when :shift
                   input[:args] = [input.delete(:value)]
@@ -78,7 +78,7 @@ module Whittle
                     :line => 0,
                     :args => args.pop(size)
                   }
-                  sym[:line] = sym[:args].first[:line]
+                  sym[:line] = 0 #sym[:args].first[:line]
                   states.pop(size)
                   args  << sym
                   input = sym
