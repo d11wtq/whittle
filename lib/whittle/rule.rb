@@ -6,12 +6,14 @@ module Whittle
     attr_reader :name
     attr_reader :action
     attr_reader :components
+    attr_reader :assoc
 
     def initialize(name, *components)
       @components = components
       @action     = NULL_ACTION
       @name       = name
       @terminal   = components.length == 1 && !components.first.kind_of?(Symbol)
+      @assoc      = :right
 
       @components.each do |c|
         unless Regexp === c || String === c || Symbol === c
@@ -61,7 +63,8 @@ module Whittle
     end
 
     def as(&block)
-      raise ArgumentError, "Rule#as requires a block, but none given" unless block_given?
+      raise ArgumentError, "Rule#as requires a block, but none given" \
+        unless block_given?
 
       tap do
         @action = block
@@ -70,6 +73,15 @@ module Whittle
 
     def as_value
       as(&LEX_ACTION)
+    end
+
+    def %(assoc)
+      raise "Invalid associativity #{assoc.inspect}" \
+        unless [:left, :right, :nonassoc].include?(assoc)
+
+      tap do
+        @assoc = assoc
+      end
     end
 
     def scan(source, line)

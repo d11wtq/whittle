@@ -130,7 +130,7 @@ describe Whittle::Parser do
         end
 
         rule(:minus) do |r|
-          r["-"].as_value
+          r["-"].as_value % :left
         end
 
         rule(:paren) do |r|
@@ -163,7 +163,7 @@ describe Whittle::Parser do
         end
 
         rule(:minus) do |r|
-          r["-"].as_value
+          r["-"].as_value % :left
         end
       end
     end
