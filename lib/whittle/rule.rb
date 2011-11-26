@@ -42,32 +42,61 @@ module Whittle
       @terminal
     end
 
-    # Recursively builds a 2-dimensional parse table starting with the current rule
-    # The declaration of this method is complex (it has too many parameters), so is
-    # likely to change at some point.
-    def build_parse_table(state, table, parser, seen, offset = 0, prec = 0)
-      table[state] ||= {}
-      sym        = components[offset]
+    def build_parse_table(table, parser, context)
+      state      = table[context[:state]] ||= {}
+      sym        = components[context[:offset]]
       rule       = parser.rules[sym]
-      new_offset = offset + 1
-      new_state  = if table[state].key?(sym)
-        table[state][sym][:state]
-      end || [self, offset + 1].hash
+      new_offset = context[:offset] + 1
+      new_state  = if state.key?(sym)
+        state[sym][:state]
+      end || [self, new_offset].hash
 
-      unless sym.nil?
+      if sym.nil?
+        state[sym] = {
+          :action => :reduce,
+          :rule   => self,
+          :prec   => context[:prec]
+        }
+      else
         raise "Unreferenced rule #{sym.inspect}" if rule.nil?
 
-        prec   = (rule.terminal? && rule.first.prec > 0) ? rule.first.prec : prec
-        action = rule.nonterminal? ? :goto : :shift
-        table[state][sym] = { :action => action, :state => new_state, :prec => prec }
+        if rule.terminal?
+          state[sym] = {
+            :action => :shift,
+            :state  => new_state,
+            :prec   => [rule.first.prec, context[:prec]].max
+          }
+        else
+          state[sym] = {
+            :action => :goto,
+            :state  => new_state
+          }
 
-        rule.build_parse_table(state, table, parser, seen) if action == :goto
-        build_parse_table(new_state, table, parser, seen, new_offset, prec)
-      else
-        table[state][sym] = { :action => :reduce, :rule => self, :prec => prec }
+          rule.build_parse_table(
+            table,
+            parser,
+            {
+              :state  => context[:state],
+              :seen   => context[:seen],
+              :offset => 0,
+              :prec   => 0
+            }
+          )
+        end
+
+        build_parse_table(
+          table,
+          parser,
+          {
+            :state  => new_state,
+            :seen   => context[:seen],
+            :offset => new_offset,
+            :prec   => context[:prec]
+          }
+        )
       end
 
-      resolve_conflicts(table[state], parser)
+      resolve_conflicts(state, parser)
     end
 
     def as(&block)

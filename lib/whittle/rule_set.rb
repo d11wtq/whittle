@@ -27,22 +27,17 @@ module Whittle
       nil
     end
 
-    def build_parse_table(state, table, parser, seen = [])
-      return table if seen.include?([state, self])
+    def build_parse_table(table, parser, context)
+      return table if context[:seen].include?([context[:state], self])
 
-      seen << [state, self]
+      context[:seen] << [context[:state], self]
 
       table.tap do
         each do |rule|
-          rule.build_parse_table(state, table, parser, seen)
+          rule.build_parse_table(table, parser, context)
         end
       end
     end
-
-    # expr: (, expr, )
-    # expr: expr, +, expr
-    # expr: expr, *, expr
-    # expr: num
 
     def terminal?
       @rules.length == 1 && @rules.first.terminal?
