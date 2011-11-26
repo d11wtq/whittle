@@ -374,7 +374,7 @@ class Parser < Whittle::Parser
 
   rule(:parens) do |r|
     r[]
-    r["(", :parens, ")]
+    r["(", :parens, ")"]
   end
 
   start(:parens)
