@@ -1,4 +1,4 @@
-# Whittle: A very small LALR(1) parser in pure ruby, without a generator.
+# Whittle: A little LALR(1) parser in pure ruby, without a generator.
 #
 # Copyright (c) Chris Corbyn, 2011
 
@@ -37,7 +37,7 @@ module Whittle
   #       r[:expr, "-", :expr].as { |left, _, right| left - right }
   #       r[:expr, "/", :expr].as { |left, _, right| left / right }
   #       r[:expr, "*", :expr].as { |left, _, right| left * right }
-  #       r[:int].as_value
+  #       r[:int].as(:value)
   #     end
   #
   #     start(:expr)
@@ -120,7 +120,7 @@ module Whittle
         if block_given?
           rules[name].tap { |r| yield r }
         else
-          rules[name][name].as_value
+          rules[name][name].as(:value)
         end
       end
 

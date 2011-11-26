@@ -6,7 +6,7 @@ describe "a parser with logical grouping" do
       rule(:expr) do |r|
         r["(", :expr, ")"].as   { |_, expr, _| expr }
         r[:expr, "-", :expr].as { |a, _, b| a - b }
-        r[:int].as_value
+        r[:int].as(:value)
       end
 
       rule(:int) do |r|

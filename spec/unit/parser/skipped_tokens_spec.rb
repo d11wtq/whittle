@@ -15,7 +15,7 @@ describe "a parser that skips tokens" do
 
       rule(:expr) do |r|
         r[:expr, "-", :expr].as { |a, _, b| a - b }
-        r[:int].as_value
+        r[:int].as(:value)
       end
 
       start(:expr)

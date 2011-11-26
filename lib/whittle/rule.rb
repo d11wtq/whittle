@@ -1,14 +1,38 @@
+# Whittle: A little LALR(1) parser in pure ruby, without a generator.
+#
+# Copyright (c) Chris Corbyn, 2011
+
 module Whittle
+  # Represents an individual Rule, forming part of an overall RuleSet.
   class Rule
     NULL_ACTION = Proc.new { }
     DUMP_ACTION = Proc.new { |input| input }
 
+    # Returns the name of the RuleSet in which this Rule is used
     attr_reader :name
+
+    # Returns a Proc used to reduce the input for the Rule
     attr_reader :action
+
+    # Returns an Array of the sequence of inputs that form this Rule
     attr_reader :components
+
+    # Returns the associativity of this Rule (:left, :right or :nonassoc)
     attr_reader :assoc
+
+    # Returns the precedency of this Rule, as an integer (higher means stronger)
     attr_reader :prec
 
+    # Create a new Rule for the RuleSet named +name+.
+    #
+    # The components can either be names of other Rules, or for a terminal Rule,
+    # a single pattern to match in the input string.
+    #
+    # @param [String] name
+    #   the name of the RuleSet to which this Rule belongs
+    #
+    # @param [Object...] components...
+    #   a variable list of components that make up the Rule
     def initialize(name, *components)
       @components = components
       @action     = NULL_ACTION
@@ -20,10 +44,6 @@ module Whittle
       @components.each do |c|
         unless Regexp === c || String === c || Symbol === c
           raise ArgumentError, "Unsupported rule component #{c.class}"
-        end
-
-        if components.length > 1 && Regexp === c
-          raise ArgumentError, "Nonterminal rules (rules with more than one component) may not contain regular expressions"
         end
       end
 
@@ -38,10 +58,30 @@ module Whittle
       end
     end
 
+    # Predicate check for  whether or not the Rule represents a terminal symbol.
+    #
+    # A terminal symbol is effectively any rule that directly matches some
+    # pattern in the input string and references no other rules.
+    #
+    # @return [Boolean]
+    #   true if this rule represents a terminal symbol
     def terminal?
       @terminal
     end
 
+    # Walks all possible branches from the given rule, building a parse table.
+    #
+    # The parse table is a list of instructions (transitions) that can be looked
+    # up, given the current parser state and the current lookahead token.
+    #
+    # @param [Hash<Fixnum,Hash>] table
+    #   the table to construct for
+    #
+    # @param [Parser] parser
+    #   the Parser containing all the Rules in the grammar
+    #
+    # @param [Hash] context
+    #   a Hash used to track state as the grammar is analyzed
     def build_parse_table(table, parser, context)
       state      = table[context[:state]] ||= {}
       sym        = components[context[:offset]]
@@ -99,17 +139,33 @@ module Whittle
       resolve_conflicts(state, parser)
     end
 
-    def as(&block)
-      raise ArgumentError, "Rule#as requires a block, but none given" \
-        unless block_given?
-
+    # Specify how this Rule should be reduced.
+    #
+    # Given a block, the Rule will be reduced by passing the result of reducing
+    # all inputs as arguments to the block.
+    #
+    # Given the Symbol :value, the matched input will be returned verbatim.
+    # Given the Symbol :nothing, nil will be returned; you can use this to
+    # skip whitesapce and comments, for example.
+    #
+    # @param [Symbol] preset
+    #   one of the preset actions, :value or :nothing; optional
+    #
+    # @return [Rule]
+    #   returns self
+    def as(preset = nil, &block)
       tap do
-        @action = block
+        case preset
+          when :value   then @action = DUMP_ACTION
+          when :nothing then @action = NULL_ACTION
+          when nil
+            raise ArgumentError, "Rule#as expected a block, not none given" \
+              unless block_given?
+            @action = block
+          else
+            raise ArgumentError, "Invalid preset #{preset.inspect} to Rule#as"
+        end
       end
-    end
-
-    def as_value
-      as(&DUMP_ACTION)
     end
 
     def %(assoc)

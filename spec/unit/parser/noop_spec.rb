@@ -4,7 +4,7 @@ describe "a noop parser" do
   let(:parser) do
     Class.new(Whittle::Parser) do
       rule(:char) do |r|
-        r[/./].as_value
+        r[/./].as(:value)
       end
 
       rule(:prog) do |r|

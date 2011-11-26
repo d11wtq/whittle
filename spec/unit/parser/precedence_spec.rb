@@ -13,7 +13,7 @@ describe "a parser depending on operator precedences" do
       rule(:expr) do |r|
         r[:expr, "+", :expr].as { |a, _, b| a + b }
         r[:expr, "*", :expr].as { |a, _, b| a * b }
-        r[:int].as_value
+        r[:int].as(:value)
       end
 
       start(:expr)
