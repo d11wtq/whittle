@@ -8,19 +8,10 @@ module Whittle
     NULL_ACTION = Proc.new { }
     DUMP_ACTION = Proc.new { |input| input }
 
-    # Returns the name of the RuleSet in which this Rule is used
     attr_reader :name
-
-    # Returns a Proc used to reduce the input for the Rule
     attr_reader :action
-
-    # Returns an Array of the sequence of inputs that form this Rule
     attr_reader :components
-
-    # Returns the associativity of this Rule (:left, :right or :nonassoc)
     attr_reader :assoc
-
-    # Returns the precedency of this Rule, as an integer (higher means stronger)
     attr_reader :prec
 
     # Create a new Rule for the RuleSet named +name+.
