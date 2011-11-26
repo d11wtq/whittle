@@ -96,5 +96,21 @@ module Whittle
     def nonterminal?
       !terminal?
     end
+
+    # Convenience method to access the precedence of a RuleSet representing a terminal.
+    #
+    # @return [Fixnum]
+    #   the precedence of the terminal Symbol, or zero for nonterminals.
+    def prec
+      terminal? ? @rules.first.prec : 0
+    end
+
+    # Convenience method to access the associativity of a RuleSet representing a terminal.
+    #
+    # @return [Symbol]
+    #   the associativty of the terminal Symbol.
+    def assoc
+      terminal? ? @rules.first.assoc : :right
+    end
   end
 end

@@ -91,11 +91,18 @@ module Whittle
       else
         raise "Unreferenced rule #{sym.inspect}" if rule.nil?
 
+        new_prec = if rule.terminal?
+          rule.prec
+        else
+          context[:prec]
+        end
+
         if rule.terminal?
           state[sym] = {
             :action => :shift,
             :state  => new_state,
-            :prec   => [rule.first.prec, context[:prec]].max
+            :prec   => new_prec,
+            :assoc  => rule.assoc
           }
         else
           state[sym] = {
@@ -122,12 +129,12 @@ module Whittle
             :state  => new_state,
             :seen   => context[:seen],
             :offset => new_offset,
-            :prec   => context[:prec]
+            :prec   => new_prec
           }
         )
       end
 
-      resolve_conflicts(state, parser)
+      resolve_conflicts(state)
     end
 
     # Specify how this Rule should be reduced.
@@ -150,8 +157,7 @@ module Whittle
           when :value   then @action = DUMP_ACTION
           when :nothing then @action = NULL_ACTION
           when nil
-            raise ArgumentError, "Rule#as expected a block, not none given" \
-              unless block_given?
+            raise ArgumentError, "Rule#as expected a block, not none given" unless block_given?
             @action = block
           else
             raise ArgumentError, "Invalid preset #{preset.inspect} to Rule#as"
@@ -215,12 +221,12 @@ module Whittle
 
     private
 
-    def resolve_conflicts(instructions, parser)
-      if r = instructions.detect { |s, i| i[:action] == :reduce }
+    def resolve_conflicts(instructions)
+      if r = instructions.values.detect { |i| i[:action] == :reduce }
         instructions.reject! do |s, i|
-          i[:action] == :shift &&
-            parser.rules[s].first.assoc == :left &&
-            i[:prec] <= r.last[:prec]
+          ((i[:action] == :shift) &&
+           ((r[:prec] > i[:prec]) ||
+            (r[:prec] == i[:prec] && i[:assoc] == :left)))
         end
       end
     end

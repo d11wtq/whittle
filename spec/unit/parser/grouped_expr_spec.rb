@@ -15,7 +15,7 @@ describe "a parser with logical grouping" do
 
       rule("(")
       rule(")")
-      rule("-") % :left
+      rule("-") % :left ^ 1
 
       start(:expr)
     end
