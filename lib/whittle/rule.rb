@@ -7,6 +7,7 @@ module Whittle
     attr_reader :action
     attr_reader :components
     attr_reader :assoc
+    attr_reader :prec
 
     def initialize(name, *components)
       @components = components
@@ -14,6 +15,7 @@ module Whittle
       @name       = name
       @terminal   = components.length == 1 && !components.first.kind_of?(Symbol)
       @assoc      = :right
+      @prec       = 0
 
       @components.each do |c|
         unless Regexp === c || String === c || Symbol === c
@@ -43,7 +45,7 @@ module Whittle
     # Recursively builds a 2-dimensional parse table starting with the current rule
     # The declaration of this method is complex (it has too many parameters), so is
     # likely to change at some point.
-    def build_parse_table(state, table, parser, seen, offset = 0)
+    def build_parse_table(state, table, parser, seen, offset = 0, prec = 0)
       table[state] ||= {}
       sym        = components[offset]
       rule       = parser.rules[sym]
@@ -55,13 +57,14 @@ module Whittle
       unless sym.nil?
         raise "Unreferenced rule #{sym.inspect}" if rule.nil?
 
+        prec   = (rule.terminal? && rule.first.prec > 0) ? rule.first.prec : prec
         action = rule.nonterminal? ? :goto : :shift
-        table[state][sym] = { :action => action, :state => new_state }
+        table[state][sym] = { :action => action, :state => new_state, :prec => prec }
 
         rule.build_parse_table(state, table, parser, seen) if action == :goto
-        build_parse_table(new_state, table, parser, seen, new_offset)
+        build_parse_table(new_state, table, parser, seen, new_offset, prec)
       else
-        table[state][sym] = { :action => :reduce, :rule => self }
+        table[state][sym] = { :action => :reduce, :rule => self, :prec => prec }
       end
 
       resolve_conflicts(table[state], parser)
@@ -87,6 +90,10 @@ module Whittle
       tap { @assoc = assoc }
     end
 
+    def ^(prec)
+      tap { @prec = prec.to_i }
+    end
+
     def scan(source, line)
       return nil unless @terminal
 
@@ -97,7 +104,8 @@ module Whittle
           :rule      => self,
           :value     => match,
           :line      => line + ("~" + match + "~").lines.count - 1,
-          :discarded => @action.equal?(NULL_ACTION)
+          :discarded => @action.equal?(NULL_ACTION),
+          :prec      => prec
         }
       end
     end
@@ -105,9 +113,12 @@ module Whittle
     private
 
     def resolve_conflicts(instructions, parser)
-      if instructions.any? { |s, i| i[:action] == :reduce }
+      if r = instructions.detect { |s, i| i[:action] == :reduce }
+        r = r.last
         instructions.reject! do |s, i|
-          i[:action] == :shift && parser.rules[s].first.assoc == :left
+          i[:action] == :shift &&
+            parser.rules[s].first.assoc == :left &&
+            i[:prec] <= r[:prec]
         end
       end
     end
