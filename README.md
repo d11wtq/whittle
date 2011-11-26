@@ -5,9 +5,11 @@ it's 100% ruby.  You write parsers by specifying sequences of allowable rules (w
 other rules, or even to themselves), and for each rule in your grammar, you provide a block that
 is invoked when the grammar is recognized.
 
-If you're not familiar with parsing, you should find Whittle to be a very friendly little parser.
+If you're not familiar with parsing, you should find Whittle to be a very friendly little
+parser.
+
 It is related, somewhat, to yacc and bison, which belong to the class of parsers knows as
-LALR(1): Lookeahead Left-Right (using 1 lookahead token).  This class of parsers is both easy to
+LALR(1): Lookahead Left-Right (using 1 lookahead token).  This class of parsers is both easy to
 work with, and powerful.
 
 Whittle provides meaningful error reporting and even lets you hook into the error handling logic
