@@ -168,6 +168,15 @@ module Whittle
       end
     end
 
+    # Set the associativity of this Rule.
+    #
+    # Accepts values of :left, :right (default) or :nonassoc.
+    #
+    # @param [Symbol] assoc
+    #   one of :left, :right or :nonassoc
+    #
+    # @return [Rule]
+    #   returns self
     def %(assoc)
       raise "Invalid associativity #{assoc.inspect}" \
         unless [:left, :right, :nonassoc].include?(assoc)
@@ -175,10 +184,29 @@ module Whittle
       tap { @assoc = assoc }
     end
 
+    # Set the precedence of this Rule, as an Integer.
+    #
+    # The higher the number, the higher the precedence.
+    #
+    # @param [Fixnum] prec
+    #   the precedence (default is zero)
     def ^(prec)
       tap { @prec = prec.to_i }
     end
 
+    # Invoked for terminal rules during lexing, ignored for nonterminal rules.
+    #
+    # @param [String] source
+    #   the input String the scan
+    #
+    # @param [Fixnum] line
+    #   the line the lexer was up to when the previous token was matched
+    #
+    # @return [Hash]
+    #   a Hash representing the token, containing :rule, :value, :line and
+    #   :discarded, if the token is to be skipped.
+    #
+    # Returns nil if nothing is matched.
     def scan(source, line)
       return nil unless @terminal
 
