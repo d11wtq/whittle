@@ -246,7 +246,7 @@ module Whittle
                   states << ins[:state]
               end
             else
-              parse_error(state, input)
+              error(state, input, :states => states, :args => args)
             end
           end
         end
@@ -292,9 +292,9 @@ module Whittle
     # @param [Hash] input
     #   the received token (or, unlikely, a nonterminal symbol)
     #
-    # @param [Hash] context
-    #   the current parse context (input stack + state stack)
-    def parse_error(state, input)
+    # @param [Hash] stack
+    #   the current parse context (arg stack + state stack)
+    def error(state, input, stack)
       message = <<-ERROR.gsub(/\n\s+/, " ").strip
       Parse error:
       expected

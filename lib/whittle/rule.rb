@@ -40,25 +40,25 @@ module Whittle
       @terminal
     end
 
+    # Recursively builds a 2-dimensional parse table starting with the current rule
+    # The declaration of this method is complex (it has too many parameters), so is
+    # likely to change at some point.
     def build_parse_table(state, table, parser, seen, offset = 0)
-      # FIXME: Clean this up
       table[state] ||= {}
       sym        = components[offset]
+      rule       = parser.rules[sym]
       new_offset = offset + 1
       new_state  = if table[state].key?(sym)
         table[state][sym][:state]
       end || [self, offset + 1].hash
 
       unless sym.nil?
-        raise "Unreferenced rule #{sym.inspect}" unless parser.rules.key?(sym)
+        raise "Unreferenced rule #{sym.inspect}" if rule.nil?
 
-        if parser.rules[sym].nonterminal?
-          table[state][sym] = { :action => :goto, :state => new_state }
-          parser.rules[sym].build_parse_table(state, table, parser, seen)
-        else
-          table[state][sym] = { :action => :shift, :state => new_state }
-        end
+        action = rule.nonterminal? ? :goto : :shift
+        table[state][sym] = { :action => action, :state => new_state }
 
+        rule.build_parse_table(state, table, parser, seen) if action == :goto
         build_parse_table(new_state, table, parser, seen, new_offset)
       else
         table[state][sym] = { :action => :reduce, :rule => self }
