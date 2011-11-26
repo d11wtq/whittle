@@ -104,8 +104,7 @@ module Whittle
           :rule      => self,
           :value     => match,
           :line      => line + ("~" + match + "~").lines.count - 1,
-          :discarded => @action.equal?(NULL_ACTION),
-          :prec      => prec
+          :discarded => @action.equal?(NULL_ACTION)
         }
       end
     end
@@ -114,11 +113,10 @@ module Whittle
 
     def resolve_conflicts(instructions, parser)
       if r = instructions.detect { |s, i| i[:action] == :reduce }
-        r = r.last
         instructions.reject! do |s, i|
           i[:action] == :shift &&
             parser.rules[s].first.assoc == :left &&
-            i[:prec] <= r[:prec]
+            i[:prec] <= r.last[:prec]
         end
       end
     end
