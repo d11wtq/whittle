@@ -1,7 +1,7 @@
 module Whittle
   class Rule
     NULL_ACTION = Proc.new { }
-    LEX_ACTION  = Proc.new { |input| input }
+    DUMP_ACTION = Proc.new { |input| input }
 
     attr_reader :name
     attr_reader :action
@@ -74,16 +74,14 @@ module Whittle
     end
 
     def as_value
-      as(&LEX_ACTION)
+      as(&DUMP_ACTION)
     end
 
     def %(assoc)
       raise "Invalid associativity #{assoc.inspect}" \
         unless [:left, :right, :nonassoc].include?(assoc)
 
-      tap do
-        @assoc = assoc
-      end
+      tap { @assoc = assoc }
     end
 
     def scan(source, line)
