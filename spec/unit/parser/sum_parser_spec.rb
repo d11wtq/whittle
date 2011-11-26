@@ -3,16 +3,14 @@ require "spec_helper"
 describe "a parser returning the sum of two integers" do
   let(:parser) do
     Class.new(Whittle::Parser) do
+      rule("+")
+
       rule(:int) do |r|
         r[/[0-9]+/].as { |int| Integer(int) }
       end
 
       rule(:sum) do |r|
         r[:int, "+", :int].as { |a, _, b| a + b }
-      end
-
-      rule(:default) do |r|
-        r[/./].as_value
       end
 
       start(:sum)

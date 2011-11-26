@@ -1,17 +1,17 @@
-# Whittle: A very small LALR(1) parser in pure ruby; not a yacc clone.
+# Whittle: A very small LALR(1) parser in pure ruby, without a generator.
 #
 # Copyright (c) Chris Corbyn, 2011
 
 module Whittle
-  # Parsers are created at runtime, by subclassing the Parser class.
+  # Parsers are created by subclassing the Parser class and defining a context-free grammar.
   #
-  # Unlike other LALR(1) parsers, Whittle parsers do not rely on code-generation,
-  # instead they synthesize a parse table from the grammar at runtime, on the first
-  # parse.
+  # Unlike other LALR(1) parsers, Whittle does not rely on code-generation, instead it
+  # synthesizes a parse table from the grammar at runtime, on the first parse.
   #
-  # While Whittle's implementation works a little differently to yacc/bison and
-  # ruby parser generators like racc, the parseable grammars are the same.  LALR(1)
-  # parsers are very powerful.
+  # While Whittle's implementation works a little differently to yacc/bison and ruby parser
+  # generators like racc and citrus, the parseable grammars are the same.  LALR(1) parsers are
+  # very powerful and it is generally said that the languages they cannot parse are difficult for
+  # humans to understand.
   #
   # You should refer to the README for a full description of how to use the parser,
   # but a quick example follows.
@@ -24,15 +24,13 @@ module Whittle
   #     end
   #
   #     rule(:int) do |r|
-  #       r[/[0-9]+/].as_value
+  #       r[/[0-9]+/].as { |i| Integer(i) }
   #     end
   #
-  #     rule(:operator) do |r|
-  #       r["+"].as_value % :left
-  #       r["-"].as_value % :left
-  #       r["/"].as_value % :left
-  #       r["*"].as_value % :left
-  #     end
+  #     rule("+") % :left
+  #     rule("-") % :left
+  #     rule("/") % :left
+  #     rule("*") % :left
   #
   #     rule(:expr) do |r|
   #       r[:expr, "+", :expr].as { |left, _, right| left + right }
@@ -52,38 +50,81 @@ module Whittle
     class << self
       # Returns a Hash mapping rule names with their RuleSets.
       #
-      # @return [RuleSet]
+      # @return [Hash<String, RuleSet>]
       #   all rules defined by the parser
       def rules
         @rules ||= {}
       end
 
-      # Declares a new rule with +name+.
+      # Declares a new rule.
       #
-      # The RuleSet associated with the rule is yielded.  You must specify the grammar
-      # within the block.
+      # The are two ways to call this method.  The most fundamental way is to pass a Symbol
+      # in the +name+ parameter, along with a block, in which you will add one more possible
+      # rules.
       #
-      # @example Declaring a new rule
+      # @example Specifying multiple rules with a block
       #
-      #   rule(:func_call) do |r|
-      #     r[:identifier, "(", :arg_list, ")"].as { |id, _, args, _| Context.current.call_function(id, *args) }
+      #   rule(:expr) do |r|
+      #     r[:expr, "+", :expr].as { |a, _, b| a + b }
+      #     r[:expr, "-", :expr].as { |a, _, b| a - b }
+      #     r[:expr, "/", :expr].as { |a, _, b| a / b }
+      #     r[:expr, "*", :expr].as { |a, _, b| a * b }
+      #     r[:integer].as { |i| Integer(i) }
       #   end
       #
-      # @param [Symbol] name
+      # Each rule specified in this way defines one of many possibilities to describe the input.
+      # Rules may refer back to themselves, which means in the above, any integer is a valid
+      # expr:
+      #
+      #   42
+      #
+      # Therefore any sum of integers as also a valid expr:
+      #
+      #   42 + 24
+      #
+      # Therefore any multiplication of sums of integers is also a valid expr, and so on.
+      #
+      #   42 + 24 * 7 + 52
+      #
+      # A rule like the above is called a 'nonterminal', because upon recognizing any expr, it
+      # is possible for the rule to continue collecting input and becoming a larger expr.
+      #
+      # In subtle contrast, a rule like the following:
+      #
+      #   rule("+") do |r|
+      #     r["+"].as { |plus| plus }
+      #   end
+      #
+      # Is called a 'terminal' token, since upon recognizing a "+", the parser cannot
+      # add further input to the "+" itself... it is the tip of a branch in the parse tree; the
+      # branch terminates here, and subsequently the rule is terminal.
+      #
+      # There is a shorthand way to write the above rule:
+      #
+      #   rule("+")
+      #
+      # Not given a block, #rule treats the name parameter as a literal token.
+      #
+      # Note that nonterminal rules are composed of other nonterminal rules and/or terminal
+      # rules.  Terminal rules contain one, and only one Regexp pattern or fixed string.
+      #
+      # @param [Symbol, String] name
       #   the name of the ruleset (note the one ruleset can contain multiple rules)
       #
-      # @return [RuleSet]
-      #   the newly created RuleSet
+      # @return [RuleSet, Rule]
+      #   the newly created RuleSet if a block was given, otherwise a rule representing a
+      #   terminal token for the input string +name+.
       def rule(name)
-        raise ArgumentError, "Parser.rule requires a block, but none was given" unless block_given?
+        rules[name] = RuleSet.new(name)
 
-        RuleSet.new(name).tap do |rule_set|
-          rules[name] = rule_set
-          yield rule_set
+        if block_given?
+          rules[name].tap { |r| yield r }
+        else
+          rules[name][name].as_value
         end
       end
 
-      # Declare most general rule that can be used to describe an entire input.
+      # Declares most general rule that can be used to describe an entire input.
       #
       # Called without any arguments, returns the current start rule.
       #
@@ -97,43 +138,47 @@ module Whittle
         @start
       end
 
-      # Returns the numeric value for the initial state (the state ID associated with the start rule).
+      # Returns the numeric value for the initial state (the state ID associated with the start
+      # rule).
       #
-      # In most LALR(1) parsers, this would be zero, but for implementation reasons, this will be an
-      # unpredictably large (or small) number.
+      # In most LALR(1) parsers, this would be zero, but for implementation reasons, this will
+      # be an unpredictably large (or small) number.
       #
       # @return [Fixnum]
       #   the ID for the initial state in the parse table
       def initial_state
         prepare_start_rule
-        [rules[@start], 0].hash
+        [rules[start], 0].hash
       end
 
       # Returns the entire parse table used to interpret input into the parser.
       #
-      # You should not need to call this method, though you may wish to inspect its contents during debugging.
+      # You should not need to call this method, though you may wish to inspect its contents
+      # during debugging.
       #
-      # Note that the token +nil+ in the parse table represents "any symbol" and its action is always reduce.
+      # Note that the token +nil+ in the parse table represents "anything" and its action is
+      # always to reduce.
+      #
       # Shift-reduce conflicts are resolved at runtime and therefore remain in the parse table.
       #
       # @return [Hash]
-      #   a 2-dimensional Hash representing a series of states and actions to perform for a given lookahead
+      #   a 2-dimensional Hash representing states with actions to perform for a given lookahead
       def parse_table
         prepare_start_rule
-        rules[@start].build_parse_table(initial_state, {}, self)
+        rules[start].build_parse_table(initial_state, {}, self)
       end
 
       private
 
       def prepare_start_rule
-        raise "Undefined start rule #{@start.inspect}" unless rules.key?(@start)
+        raise "Undefined start rule #{start.inspect}" unless rules.key?(start)
 
-        if rules[@start].terminal?
+        if rules[start].terminal?
           rule(:*) do |r|
-            r[@start].as { |prog| prog }
+            r[start].as { |prog| prog }
           end
 
-          @start = :*
+          start(:*)
         end
       end
     end
@@ -147,16 +192,16 @@ module Whittle
 
     # Accepts input in the form of a String and attempts to parse it according to the grammar.
     #
-    # The input is scanned using a lexical analysis routine, defined by the #lex method. Each token
-    # detected by the routine is used to pick an action from the parse table.  Each reduction initially
-    # builds a branch in an AST (abstract syntax tree), until all input has been read and the start
-    # rule has been recognized, at which point the AST is evaluated by invoking the callbacks defined in
-    # the grammar in a depth-first fashion.
+    # The input is scanned using a lexical analysis routine, defined by the #lex method. Each
+    # token detected by the routine is used to pick an action from the parse table.  Each
+    # reduction initially builds a branch in an AST (abstract syntax tree), until all input has
+    # been read and the start rule has been recognized, at which point the AST is evaluated by
+    # invoking the callbacks defined in the grammar in a depth-first fashion.
     #
-    # If the parser encounters a token it does not recognise, a parse error will be raised, specifying
-    # what was expected, what was received, and on which line the error occurred.
+    # If the parser encounters a token it does not recognise, a parse error will be raised,
+    # specifying what was expected, what was received, and on which line the error occurred.
     #
-    # A successful parse returns the result of evaluating the start rule.
+    # A successful parse returns the result of evaluating the start rule, whatever that may be.
     #
     # @param [String] input
     #   a complete input string to parse according to the grammar
@@ -277,7 +322,7 @@ module Whittle
     end
 
     def instruction(state, input)
-      # FIXME: I think this method does work the parse table should really do
+      # FIXME: I think this method does work that the parse table should really do
       #
       # The parse table should:
       # a) Disallow string rules, resolving them to valid rule names
@@ -291,7 +336,7 @@ module Whittle
 
       assoc     = input[:rule].assoc unless input[:name] == :$end
       reduce_op = state[nil]
-      shift_op  = state[input[:name]] || state[input[:value]]
+      shift_op  = state[input[:name]]
 
       case assoc
         when :left  then reduce_op || shift_op

@@ -3,10 +3,14 @@ require "spec_helper"
 describe "a parser that skips tokens" do
   let(:parser) do
     Class.new(Whittle::Parser) do
-      start(:expr)
-
       rule(:wsp) do |r|
         r[/\s+/]
+      end
+
+      rule("-") % :left
+
+      rule(:int) do |r|
+        r[/[0-9]+/].as { |int| Integer(int) }
       end
 
       rule(:expr) do |r|
@@ -14,13 +18,7 @@ describe "a parser that skips tokens" do
         r[:int].as_value
       end
 
-      rule(:int) do |r|
-        r[/[0-9]+/].as { |int| Integer(int) }
-      end
-
-      rule(:minus) do |r|
-        r["-"].as_value % :left
-      end
+      start(:expr)
     end
   end
 

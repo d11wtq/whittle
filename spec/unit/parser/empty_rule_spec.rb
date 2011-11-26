@@ -8,9 +8,8 @@ describe "a parser with an empty rule" do
         r["(", :expr, ")"].as { |_, expr, _| expr }
       end
 
-      rule(:default) do |r|
-        r[/./].as_value
-      end
+      rule("(")
+      rule(")")
 
       start(:expr)
     end

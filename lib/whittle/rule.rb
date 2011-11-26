@@ -49,7 +49,7 @@ module Whittle
       end || [self, offset + 1].hash
 
       unless sym.nil?
-        if Symbol === sym && parser.rules[sym].nonterminal?
+        if parser.rules.key?(sym) && parser.rules[sym].nonterminal?
           table[state][sym] = { :action => :goto,  :state => new_state }
           parser.rules[sym].build_parse_table(state, table, parser, seen)
         else

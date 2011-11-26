@@ -3,8 +3,6 @@ require "spec_helper"
 describe "a parser with logical grouping" do
   let(:parser) do
     Class.new(Whittle::Parser) do
-      start(:expr)
-
       rule(:expr) do |r|
         r["(", :expr, ")"].as   { |_, expr, _| expr }
         r[:expr, "-", :expr].as { |a, _, b| a - b }
@@ -15,13 +13,11 @@ describe "a parser with logical grouping" do
         r[/[0-9]+/].as { |int| Integer(int) }
       end
 
-      rule(:minus) do |r|
-        r["-"].as_value % :left
-      end
+      rule("(")
+      rule(")")
+      rule("-") % :left
 
-      rule(:paren) do |r|
-        r[/[\(\)]/].as_value
-      end
+      start(:expr)
     end
   end
 
