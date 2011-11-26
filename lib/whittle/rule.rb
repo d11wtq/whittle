@@ -41,6 +41,7 @@ module Whittle
     end
 
     def build_parse_table(state, table, parser, seen, offset = 0)
+      # FIXME: Clean this up
       table[state] ||= {}
       sym        = components[offset]
       new_offset = offset + 1
@@ -52,7 +53,7 @@ module Whittle
         raise "Unreferenced rule #{sym.inspect}" unless parser.rules.key?(sym)
 
         if parser.rules[sym].nonterminal?
-          table[state][sym] = { :action => :goto,  :state => new_state }
+          table[state][sym] = { :action => :goto, :state => new_state }
           parser.rules[sym].build_parse_table(state, table, parser, seen)
         else
           table[state][sym] = { :action => :shift, :state => new_state }
@@ -62,6 +63,8 @@ module Whittle
       else
         table[state][sym] = { :action => :reduce, :rule => self }
       end
+
+      resolve_conflicts(table[state], parser)
     end
 
     def as(&block)
@@ -96,6 +99,16 @@ module Whittle
           :line      => line + ("~" + match + "~").lines.count - 1,
           :discarded => @action.equal?(NULL_ACTION)
         }
+      end
+    end
+
+    private
+
+    def resolve_conflicts(instructions, parser)
+      if instructions.any? { |s, i| i[:action] == :reduce }
+        instructions.reject! do |s, i|
+          i[:action] == :shift && parser.rules[s].first.assoc == :left
+        end
       end
     end
   end

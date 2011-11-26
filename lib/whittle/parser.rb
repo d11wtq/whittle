@@ -224,7 +224,7 @@ module Whittle
 
             state = table[states.last]
 
-            if ins = instruction(state, input)
+            if ins = state[input[:name]] || state[nil]
               case ins[:action]
                 when :shift
                   input[:args] = [input.delete(:value)]
@@ -319,36 +319,6 @@ module Whittle
       end
 
       nil
-    end
-
-    def instruction(state, input)
-      # FIXME: I think this method does work that the parse table should really do
-      #
-      # The parse table should:
-      # a) Disallow string rules, resolving them to valid rule names
-      # b) Upon adding a new transition, invoke a resolve_conflicts method
-      #
-      # resolve_conflicts does:
-      #
-      # 1. If there exists a reduce rule, for all rules tagged %left, set their actions to the reduce
-      # 2. Upon processing (1), leave shift as the default action if the current symbol has a lower prec than the lookahead
-      # 3. Not sure about nonassoc, but it's most like a standard parse error
-
-      assoc     = input[:rule].assoc unless input[:name] == :$end
-      reduce_op = state[nil]
-      shift_op  = state[input[:name]]
-
-      case assoc
-        when :left  then reduce_op || shift_op
-        when :right then shift_op  || reduce_op
-        when nil    then shift_op  || reduce_op
-        when :nonassoc
-          if shift_op && reduce_op
-            raise "Ambiguous use of non-associative #{input[:name].inspect} on line #{input[:line]}"
-          else
-            shift_op || reduce_op
-          end
-      end
     end
 
     def accept(tree)
