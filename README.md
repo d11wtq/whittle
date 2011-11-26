@@ -35,7 +35,7 @@ example.
 ``` ruby
 require 'whittle'
 
-class Mathemtician < Whittle::Parser
+class Mathematician < Whittle::Parser
   rule("+")
 
   rule(:int) do |r|
@@ -82,7 +82,7 @@ rule.
 ``` ruby
 require 'whittle'
 
-class Mathemtician < Whittle::Parser
+class Mathematician < Whittle::Parser
   rule("+")
   rule("-")
   rule("*")
@@ -127,7 +127,7 @@ more complex expressions?
 ``` ruby
 require 'whittle'
 
-class Mathemtician < Whittle::Parser
+class Mathematician < Whittle::Parser
   rule("+")
   rule("-")
   rule("*")
@@ -190,7 +190,7 @@ We can correct this by tagging our operators as left associative.
 ``` ruby
 require 'whittle'
 
-class Mathemtician < Whittle::Parser
+class Mathematician < Whittle::Parser
   rule("+") % :left
   rule("-") % :left
   rule("*") % :left
@@ -235,7 +235,7 @@ higher precedence than the addition operator.  We need to indicate this in the g
 ``` ruby
 require 'whittle'
 
-class Mathemtician < Whittle::Parser
+class Mathematician < Whittle::Parser
   rule("+") % :left ^ 1
   rule("-") % :left ^ 1
   rule("*") % :left ^ 2
@@ -275,7 +275,7 @@ mathematician.  Fortunately adjusting the syntax rules in Whittle is a painless 
 ``` ruby
 require 'whittle'
 
-class Mathemtician < Whittle::Parser
+class Mathematician < Whittle::Parser
   rule("+") % :left ^ 1
   rule("-") % :left ^ 1
   rule("*") % :left ^ 2
@@ -318,7 +318,7 @@ action, or if you want to be explicit, with `as(:nothing)`.
 ``` ruby
 require 'whittle'
 
-class Mathemtician < Whittle::Parser
+class Mathematician < Whittle::Parser
   rule(:wsp) do |r|
     r[/\s+/]
   end
@@ -394,6 +394,7 @@ end
 rule(:list) do |r|
   r[].as                { [] }
   r[:list, ",", :id].as { |list, _, id| list << id }
+  r[:id].as             { |id| [id] }
 end
 ```
 
