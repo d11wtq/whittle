@@ -462,6 +462,8 @@ would never need to do such a thing.
 There are some runnable examples included in the examples/ directory.  Playing around with these
 would probably be a useful exercise.
 
+If you have any examples you'd like to contribute, I will gladly add them to the repository.
+
 ## TODO
 
   - Provide a more powerful (state based) lexer algorithm, or at least document how users can
