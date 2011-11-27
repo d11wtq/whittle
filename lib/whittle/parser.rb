@@ -229,8 +229,6 @@ module Whittle
 
         catch(:shifted) do
           loop do
-            return accept(args.pop) if states.length == 1 && token[:name] == :$end
-
             state = table[states.last]
 
             if ins = state[input[:name]] || state[nil]
@@ -250,6 +248,8 @@ module Whittle
                   }
                   states.pop(size)
                   args << input
+
+                  return accept(args.pop) if states.length == 1 && token[:name] == :$end
                 when :goto
                   input = token
                   states << ins[:state]
