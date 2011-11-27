@@ -407,6 +407,14 @@ Currently a RuntimeError is raised, specifying what was expected, what was recei
 line the parse error occurred.  However, I am now focusing my attention on this, since it needs
 to be really flexible and easy to customize.
 
+## TODO
+
+  - Provide a more powerful (state based) lexer algorithm, or at least document how users can
+override `#lex`.
+  - Allow inspection of the parse table (it is not very human friendly right now).
+  - Allow inspection of the AST (maybe).
+  - Given in an input String, provide a human readble explanation of the parse.
+
 ## License & Copyright
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
