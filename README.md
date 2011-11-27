@@ -457,6 +457,11 @@ something else, or rewinding the parse stack to a point where the error would no
 need to write some specs on this and explore it fully myself before I document it.  99% of users
 would never need to do such a thing.
 
+## More examples
+
+There are some runnable examples included in the examples/ directory.  Playing around with these
+would probably be a useful exercise.
+
 ## TODO
 
   - Provide a more powerful (state based) lexer algorithm, or at least document how users can
