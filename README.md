@@ -407,7 +407,7 @@ given the input string "" (nothing) it would return the empty array.
 
 When the parser encounters an unexpected token in the input, an exception of type
 `Whittle::ParseError` is raised.  The exception has a very clear message, indicates the line on
-which the error was envountered, and additionally gives you programmatic access to the same
+which the error was encountered, and additionally gives you programmatic access to the same
 information.
 
 ``` ruby
