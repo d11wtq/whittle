@@ -89,7 +89,7 @@ module Whittle
           :prec   => context[:prec]
         }
       else
-        raise "Unreferenced rule #{sym.inspect}" if rule.nil?
+        raise GrammarError, "Unreferenced rule #{sym.inspect}" if rule.nil?
 
         new_prec = if rule.terminal?
           rule.prec
@@ -217,6 +217,7 @@ module Whittle
         {
           :rule      => self,
           :value     => match[0],
+          # FIXME: Optimize this line count in a cross-platform compatible way
           :line      => line + ("~" + match[0] + "~").lines.count - 1,
           :discarded => @action.equal?(NULL_ACTION)
         }
