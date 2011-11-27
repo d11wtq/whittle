@@ -15,6 +15,16 @@ work with, and powerful.
 Whittle provides meaningful error reporting and even lets you hook into the error handling logic
 if you need to write some sort of crazy madman forgiving parser.
 
+## Installation
+
+Via rubygems:
+
+    gem install whittle
+
+Or in your Gemfile, if you're using bundler:
+
+    gem 'whittle'
+
 ## The Basics
 
 Parsers using Whittle are *not* generated.  This may strike users of other LALR(1) parsers as
