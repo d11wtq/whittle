@@ -403,9 +403,41 @@ given the input string "" (nothing) it would return the empty array.
 
 ## Parse errors
 
-Currently a RuntimeError is raised, specifying what was expected, what was received and on what
-line the parse error occurred.  However, I am now focusing my attention on this, since it needs
-to be really flexible and easy to customize.
+### The default error reporting
+
+When the parser encounters an unexpected token in the input, an exception of type
+`Whittle::ParseError` is raised.  The exception has a very clear message, indicates the line on
+which the error was envountered, and additionally gives you programmatic access to the same
+information.
+
+``` ruby
+class ListParser < Whittle::Parser
+  rule(:wsp) do |r|
+    r[/\s+/]
+  end
+
+  rule(:id) do |r|
+    r[/[a-z]+/].as(:value)
+  end
+
+  rule(",")
+  rule("-")
+
+  rule(:list) do |r|
+    r[:list, ",", :id].as { |list, _, id| list << id }
+    r[:id].as             { |id| Array(id) }
+  end
+
+  start(:list)
+end
+
+ListParser.new.parse("a, \nb, \nc- \nd")
+
+# =>
+# Parse error: expected "," but got "-" on line 3
+```
+
+You can also access `#line`, `#expected` and `#received` if you catch the exception.
 
 ## TODO
 
