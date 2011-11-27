@@ -439,6 +439,14 @@ ListParser.new.parse("a, \nb, \nc- \nd")
 
 You can also access `#line`, `#expected` and `#received` if you catch the exception.
 
+### Recovering from a parse error
+
+It is possible to override the `#error` method in the parser to do something smart if you
+believe there to be easily resolved parse errors (such as switching the input token to
+something else, or rewinding the parse stack to a point where the error would not manifest.  I
+need to write some specs on this and explore it fully myself before I document it.  99% of users
+would never need to do such a thing.
+
 ## TODO
 
   - Provide a more powerful (state based) lexer algorithm, or at least document how users can
