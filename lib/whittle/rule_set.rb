@@ -40,14 +40,16 @@ module Whittle
     # @param [String] source
     #   the complete input string
     #
+    # @param [Fixnum] offset
+    #   the current index in the search
     # @param [Fixnum] line
     #   the current line number
     #
     # @return [Hash]
     #   a Hash representing the found token, or nil
-    def scan(source, line)
+    def scan(source, offset, line)
       each do |rule|
-        if token = rule.scan(source, line)
+        if token = rule.scan(source, offset, line)
           return token
         end
       end

@@ -42,9 +42,9 @@ module Whittle
 
       if @terminal
         @pattern = if pattern.kind_of?(Regexp)
-          Regexp.new("^#{pattern}")
+          Regexp.new("\\G#{pattern}")
         else
-          Regexp.new("^#{Regexp.escape(pattern)}")
+          Regexp.new("\\G#{Regexp.escape(pattern)}")
         end
       end
     end
@@ -199,6 +199,9 @@ module Whittle
     # @param [String] source
     #   the input String the scan
     #
+    # @param [Fixnum] offset
+    #   the current index in the search
+    #
     # @param [Fixnum] line
     #   the line the lexer was up to when the previous token was matched
     #
@@ -207,16 +210,14 @@ module Whittle
     #   :discarded, if the token is to be skipped.
     #
     # Returns nil if nothing is matched.
-    def scan(source, line)
+    def scan(source, offset, line)
       return nil unless @terminal
 
-      copy = source.dup
-      if match = copy.slice!(@pattern)
-        source.replace(copy)
+      if match = source.match(@pattern, offset)
         {
           :rule      => self,
-          :value     => match,
-          :line      => line + ("~" + match + "~").lines.count - 1,
+          :value     => match[0],
+          :line      => line + ("~" + match[0] + "~").lines.count - 1,
           :discarded => @action.equal?(NULL_ACTION)
         }
       end

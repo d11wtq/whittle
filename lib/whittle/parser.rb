@@ -10,8 +10,8 @@ module Whittle
   #
   # While Whittle's implementation works a little differently to yacc/bison and ruby parser
   # generators like racc and citrus, the parseable grammars are the same.  LALR(1) parsers are
-  # very powerful and it is generally said that the languages they cannot parse are difficult for
-  # humans to understand.
+  # very powerful and it is generally said that the languages they cannot parse are difficult
+  # for humans to understand.
   #
   # You should refer to the README for a full description of how to use the parser,
   # but a quick example follows.
@@ -257,6 +257,8 @@ module Whittle
                   states << ins[:state]
               end
             else
+#              require 'pp'
+#              pp args
               error(state, input, :states => states, :args => args)
             end
           end
@@ -273,14 +275,16 @@ module Whittle
     # @param [String] input
     #   the complete input string the lex
     def lex(input)
-      source = input.dup
       line   = 1
+      offset = 0
+      ending = input.length
 
-      until source.length == 0 do
-        next_token(source, line).tap do |token|
-          raise "Unmatched input #{source.inspect} on line #{line}" if token.nil?
+      until offset == ending do
+        next_token(input, offset, line).tap do |token|
+          raise "Unmatched input #{input.inspect} on line #{line}" if token.nil?
 
-          line = token[:line]
+          offset += token[:value].length
+          line, token[:line] = token[:line], line
           yield token unless token[:discarded]
         end
       end
@@ -306,24 +310,25 @@ module Whittle
     # @param [Hash] stack
     #   the current parse context (arg stack + state stack)
     def error(state, input, stack)
-      message = <<-ERROR.gsub(/\n\s+/, " ").strip
-      Parse error:
-      expected
-      #{state.keys.map { |k| k.inspect }.join("; or ")}
-      but got
-      #{input[:name].inspect}
-      on line
-      #{input[:line]}
+      expected = state.reject { |s, i| i[:action] == :goto }.keys
+      message  = <<-ERROR.gsub(/\n\s+/, " ").strip
+        Parse error:
+        expected
+        #{expected.map { |k| k.inspect }.join("; or ")}
+        but got
+        #{input[:name].inspect}
+        on line
+        #{input[:line]}
       ERROR
 
-      raise message
+      raise ParseError.new(message, input[:line], expected, input[:name])
     end
 
     private
 
-    def next_token(source, line)
+    def next_token(source, offset, line)
       rules.each do |name, rule|
-        if token = rule.scan(source, line)
+        if token = rule.scan(source, offset, line)
           token[:name] = name
           return token
         end
