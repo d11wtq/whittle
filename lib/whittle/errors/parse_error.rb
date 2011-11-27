@@ -6,7 +6,7 @@ module Whittle
   # ParseError is raised if the parse encounters an unexpected token in the input.
   #
   # You can extract the line number, the expected input and the received input.
-  class ParseError < RuntimeError
+  class ParseError < Error
     attr_reader :line
     attr_reader :expected
     attr_reader :received

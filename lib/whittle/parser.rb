@@ -281,7 +281,8 @@ module Whittle
 
       until offset == ending do
         next_token(input, offset, line).tap do |token|
-          raise "Unmatched input #{input.inspect} on line #{line}" if token.nil?
+          raise UnconsumedInputError,
+            "Unmatched input #{input[offset..-1].inspect} on line #{line}" if token.nil?
 
           offset += token[:value].length
           line, token[:line] = token[:line], line

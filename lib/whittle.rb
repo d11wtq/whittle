@@ -1,4 +1,6 @@
 require "whittle/version"
+require "whittle/error"
+require "whittle/errors/unconsumed_input_error"
 require "whittle/errors/parse_error"
 require "whittle/rule"
 require "whittle/rule_set"
