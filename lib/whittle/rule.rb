@@ -175,7 +175,7 @@ module Whittle
     # @return [Rule]
     #   returns self
     def %(assoc)
-      raise "Invalid associativity #{assoc.inspect}" \
+      raise ArgumentError, "Invalid associativity #{assoc.inspect}" \
         unless [:left, :right, :nonassoc].include?(assoc)
 
       tap { @assoc = assoc }
@@ -188,6 +188,9 @@ module Whittle
     # @param [Fixnum] prec
     #   the precedence (default is zero)
     def ^(prec)
+      raise ArgumentError, "Invalid precedence level #{prec.inspect}" \
+        unless prec.respond_to?(:to_i)
+
       tap { @prec = prec.to_i }
     end
 
