@@ -164,17 +164,19 @@ module Whittle
       # @return [Hash]
       #   a 2-dimensional Hash representing states with actions to perform for a given lookahead
       def parse_table
-        prepare_start_rule
-        rules[start].build_parse_table(
-          {},
-          self,
-          {
-            :state  => initial_state,
-            :seen   => [],
-            :offset => 0,
-            :prec   => 0
-          }
-        )
+        @parse_table ||= begin
+          prepare_start_rule
+          rules[start].build_parse_table(
+            {},
+            self,
+            {
+              :state  => initial_state,
+              :seen   => [],
+              :offset => 0,
+              :prec   => 0
+            }
+          )
+        end
       end
 
       private
