@@ -257,8 +257,6 @@ module Whittle
                   states << ins[:state]
               end
             else
-#              require 'pp'
-#              pp args
               error(state, input, :states => states, :args => args)
             end
           end
