@@ -49,7 +49,7 @@ need to understand a few fundamental ideas before we begin.
 
   1. There are two types of rule that make up a complete parser: *terminal*, and *nonterminal*
     - A terminal rule is quite simply a chunk of the input string, like '42', or 'function'
-    - A nonterminal rule is a rule that makes reference to other rules (noth terminal and
+    - A nonterminal rule is a rule that makes reference to other rules (both terminal and
       nonterminal)
   2. The input to be parsed *always* conforms to just one rule at the topmost level.  This is
      known as the "start rule" and describes the structure of the program as a whole.
