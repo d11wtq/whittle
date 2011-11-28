@@ -10,10 +10,10 @@ parser.
 
 It is related, somewhat, to yacc and bison, which belong to the class of parsers known as
 LALR(1): Left-Right, using 1 Lookahead token.  This class of parsers is both easy to work with
-and particularly powerful.  Since the algorithm is based around a theory that *never* has to
-backtrack (that is, each token read takes the parse forward, with just a single lookup in a
-parse table), parse time is also fast.  Parse time is governed by the size of the input, not by
-the size of the grammar.
+and particularly powerful (ruby itself is parsed using a LALR(1) parser).  Since the algorithm
+is based around a theory that *never* has to backtrack (that is, each token read takes the
+parse forward, with just a single lookup in a parse table), parse time is also fast.  Parse
+time is governed by the size of the input, not by the size of the grammar.
 
 Whittle provides meaningful error reporting (line number, expected tokens, received token) and
 even lets you hook into the error handling logic if you need to write some sort of crazy
