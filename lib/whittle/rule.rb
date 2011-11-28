@@ -165,6 +165,14 @@ module Whittle
       end
     end
 
+    # Alias for as(:nothing).
+    #
+    # @return [Rule]
+    #   returns self
+    def skip!
+      as(:nothing)
+    end
+
     # Set the associativity of this Rule.
     #
     # Accepts values of :left, :right (default) or :nonassoc.

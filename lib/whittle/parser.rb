@@ -58,69 +58,42 @@ module Whittle
 
       # Declares a new rule.
       #
-      # The are two ways to call this method.  The most fundamental way is to pass a Symbol
-      # in the +name+ parameter, along with a block, in which you will add one more possible
-      # rules.
+      # The are three ways to call this method:
       #
-      # @example Specifying multiple rules with a block
+      #  1. rule("+")
+      #  2. rule(:int => /[0-9]+/)
+      #  3. rule(:expr) do |r|
+      #       r[:int, "+", :int].as { |a, _, b| a + b }
+      #     end
       #
-      #   rule(:expr) do |r|
-      #     r[:expr, "+", :expr].as { |a, _, b| a + b }
-      #     r[:expr, "-", :expr].as { |a, _, b| a - b }
-      #     r[:expr, "/", :expr].as { |a, _, b| a / b }
-      #     r[:expr, "*", :expr].as { |a, _, b| a * b }
-      #     r[:integer].as { |i| Integer(i) }
-      #   end
+      # Variants (1) and (2) define basic terminal symbols (direct chunks of the input string),
+      # while variant (3) takes a block to define one or more nonterminal rules.
       #
-      # Each rule specified in this way defines one of many possibilities to describe the input.
-      # Rules may refer back to themselves, which means in the above, any integer is a valid
-      # expr:
-      #
-      #   42
-      #
-      # Therefore any sum of integers as also a valid expr:
-      #
-      #   42 + 24
-      #
-      # Therefore any multiplication of sums of integers is also a valid expr, and so on.
-      #
-      #   42 + 24 * 7 + 52
-      #
-      # A rule like the above is called a 'nonterminal', because upon recognizing any expr, it
-      # is possible for the rule to continue collecting input and becoming a larger expr.
-      #
-      # In subtle contrast, a rule like the following:
-      #
-      #   rule("+") do |r|
-      #     r["+"].as { |plus| plus }
-      #   end
-      #
-      # Is called a 'terminal' token, since upon recognizing a "+", the parser cannot
-      # add further input to the "+" itself... it is the tip of a branch in the parse tree; the
-      # branch terminates here, and subsequently the rule is terminal.
-      #
-      # There is a shorthand way to write the above rule:
-      #
-      #   rule("+")
-      #
-      # Not given a block, #rule treats the name parameter as a literal token.
-      #
-      # Note that nonterminal rules are composed of other nonterminal rules and/or terminal
-      # rules.  Terminal rules contain one, and only one Regexp pattern or fixed string.
-      #
-      # @param [Symbol, String] name
-      #   the name of the ruleset (note the one ruleset can contain multiple rules)
+      # @param [Symbol, String, Hash] name
+      #   the name of the rule, or a Hash mapping the name to a pattern
       #
       # @return [RuleSet, Rule]
       #   the newly created RuleSet if a block was given, otherwise a rule representing a
       #   terminal token for the input string +name+.
       def rule(name)
-        rules[name] = RuleSet.new(name)
-
         if block_given?
+          raise ArgumentError,
+            "Parser#rule does not accept both a Hash and a block" if name.kind_of?(Hash)
+
+          rules[name] = RuleSet.new(name)
           rules[name].tap { |r| yield r }
         else
-          rules[name][name].as(:value)
+          key, value = if name.kind_of?(Hash)
+            raise ArgumentError,
+              "Only one element allowed in Hash for Parser#rule" unless name.length == 1
+
+            name.first
+          else
+            [name, name]
+          end
+
+          rules[key] = RuleSet.new(key)
+          rules[key][value].as(:value)
         end
       end
 

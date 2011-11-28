@@ -10,7 +10,7 @@ require "whittle"
 require "bigdecimal"
 
 class Calculator < Whittle::Parser
-  rule(:wsp) { |r| r[/\s+/] } # skip whitespace
+  rule(:wsp => /\s+/).skip!
 
   rule("+") % :left ^ 1
   rule("-") % :left ^ 1
@@ -20,9 +20,7 @@ class Calculator < Whittle::Parser
   rule("(")
   rule(")")
 
-  rule(:decimal) do |r|
-    r[/([0-9]*\.)?[0-9]+/].as { |num| BigDecimal(num) }
-  end
+  rule(:decimal => /([0-9]*\.)?[0-9]+/).as { |num| BigDecimal(num) }
 
   rule(:expr) do |r|
     r["(", :expr, ")"].as   { |_, e, _| e }

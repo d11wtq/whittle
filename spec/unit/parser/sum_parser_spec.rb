@@ -5,9 +5,7 @@ describe "a parser returning the sum of two integers" do
     Class.new(Whittle::Parser) do
       rule("+")
 
-      rule(:int) do |r|
-        r[/[0-9]+/].as { |int| Integer(int) }
-      end
+      rule(:int => /[0-9]+/).as { |int| Integer(int) }
 
       rule(:sum) do |r|
         r[:int, "+", :int].as { |a, _, b| a + b }

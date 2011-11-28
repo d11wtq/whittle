@@ -7,9 +7,7 @@ describe "a parser with a self-referential rule" do
       rule(")")
       rule("+")
 
-      rule(:int) do |r|
-        r[/[0-9]+/].as { |int| Integer(int) }
-      end
+      rule(:int => /[0-9]+/).as { |int| Integer(int) }
 
       rule(:expr) do |r|
         r[:expr, "+", :expr].as { |a, _, b| a + b }

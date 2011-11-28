@@ -3,9 +3,7 @@ require "spec_helper"
 describe "a noop parser" do
   let(:parser) do
     Class.new(Whittle::Parser) do
-      rule(:char) do |r|
-        r[/./].as(:value)
-      end
+      rule(:char => /./)
 
       rule(:prog) do |r|
         r[:char]

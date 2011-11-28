@@ -6,9 +6,7 @@ describe "a parser depending on operator precedences" do
       rule("+") % :left ^ 1
       rule("*") % :left ^ 2
 
-      rule(:int) do |r|
-        r[/[0-9]+/].as { |i| Integer(i) }
-      end
+      rule(:int => /[0-9]+/).as { |i| Integer(i) }
 
       rule(:expr) do |r|
         r[:expr, "+", :expr].as { |a, _, b| a + b }

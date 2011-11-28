@@ -9,9 +9,7 @@ describe "a parser with logical grouping" do
         r[:int].as(:value)
       end
 
-      rule(:int) do |r|
-        r[/[0-9]+/].as { |int| Integer(int) }
-      end
+      rule(:int => /[0-9]+/).as { |int| Integer(int) }
 
       rule("(")
       rule(")")

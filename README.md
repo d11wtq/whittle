@@ -63,9 +63,7 @@ require 'whittle'
 class Mathematician < Whittle::Parser
   rule("+")
 
-  rule(:int) do |r|
-    r[/[0-9]+/].as { |num| Integer(num) }
-  end
+  rule(:int => /[0-9]+/).as { |num| Integer(num) }
 
   rule(:expr) do |r|
     r[:int, "+", :int].as { |a, _, b| a + b }
@@ -87,8 +85,11 @@ There are two terminal rules (`"+"` and `:int`) and one nonterminal (`:expr`) in
 grammar.  Each rule can have a block attached to it.  The block is invoked with the result
 evaluating the blocks attached to each of its inputs (in a depth-first manner).  Calling `rule`
 with no block is just a shorthand for saying "return the matched input verbatim", so our "+"
-above will receive the string "+" and return the string "+".  Since this is such a common
-use-case, Whittle offers the shorthand.
+above will receive the string "+" and return the string "+".  We can optionally use the Hash
+notation to map a name with a pattern (or a fixed string) when we declare terminal rules too,
+as we have done with the `:int` rule above.  Note that the longer way around defining terminal
+rules is to do like we have done for `:expr` and define a block, but since this is such a
+common use-case, Whittle offers the shorthand.
 
 As the input string is parsed, it *must* match the start rule `:expr`.
 
@@ -120,9 +121,7 @@ class Mathematician < Whittle::Parser
   rule("*")
   rule("/")
 
-  rule(:int) do |r|
-    r[/[0-9]+/].as { |num| Integer(num) }
-  end
+  rule(:int => /[0-9]+/).as { |num| Integer(num) }
 
   rule(:expr) do |r|
     r[:int, "+", :int].as { |a, _, b| a + b }
@@ -167,9 +166,7 @@ class Mathematician < Whittle::Parser
   rule("*")
   rule("/")
 
-  rule(:int) do |r|
-    r[/[0-9]+/].as { |num| Integer(num) }
-  end
+  rule(:int => /[0-9]+/).as { |num| Integer(num) }
 
   rule(:expr) do |r|
     r[:expr, "+", :expr].as { |a, _, b| a + b }
@@ -231,9 +228,7 @@ class Mathematician < Whittle::Parser
   rule("*") % :left
   rule("/") % :left
 
-  rule(:int) do |r|
-    r[/[0-9]+/].as { |num| Integer(num) }
-  end
+  rule(:int => /[0-9]+/).as { |num| Integer(num) }
 
   rule(:expr) do |r|
     r[:expr, "+", :expr].as { |a, _, b| a + b }
@@ -277,9 +272,7 @@ class Mathematician < Whittle::Parser
   rule("*") % :left ^ 2
   rule("/") % :left ^ 2
 
-  rule(:int) do |r|
-    r[/[0-9]+/].as { |num| Integer(num) }
-  end
+  rule(:int => /[0-9]+/).as { |num| Integer(num) }
 
   rule(:expr) do |r|
     r[:expr, "+", :expr].as { |a, _, b| a + b }
@@ -320,9 +313,7 @@ class Mathematician < Whittle::Parser
   rule("(")
   rule(")")
 
-  rule(:int) do |r|
-    r[/[0-9]+/].as { |num| Integer(num) }
-  end
+  rule(:int => /[0-9]+/).as { |num| Integer(num) }
 
   rule(:expr) do |r|
     r["(", :expr, ")"].as   { |_, exp, _| exp }
@@ -351,16 +342,13 @@ curly moustache like that!).
 
 Most languages contain tokens that are ignored when interpreting the input, such as whitespace
 and comments.  Accounting for the possibility of these in all rules would be both wasteful and
-tiresome.  Instead, we skip them entirely, by declaring a terminal rule without any associated
-action, or if you want to be explicit, with `as(:nothing)`.
+tiresome.  Instead, we skip them entirely, by declaring a terminal rule with `#skip!`.
 
 ``` ruby
 require 'whittle'
 
 class Mathematician < Whittle::Parser
-  rule(:wsp) do |r|
-    r[/\s+/]
-  end
+  rule(:wsp => /\s+/).skip!
 
   rule("+") % :left ^ 1
   rule("-") % :left ^ 1
@@ -370,9 +358,7 @@ class Mathematician < Whittle::Parser
   rule("(")
   rule(")")
 
-  rule(:int) do |r|
-    r[/[0-9]+/].as { |num| Integer(num) }
-  end
+  rule(:int => /[0-9]+/).as { |num| Integer(num) }
 
   rule(:expr) do |r|
     r["(", :expr, ")"].as   { |_, exp, _| exp }
@@ -426,9 +412,7 @@ match nothing at all, which is what we hit in the middle of our nested parenthes
 This is most useful in constructs like the following:
 
 ``` ruby
-rule(:id) do |r|
-  r[/[a-z]+/].as(:value)
-end
+rule(:id => /[a-z]+/)
 
 rule(:list) do |r|
   r[].as                { [] }
@@ -451,13 +435,9 @@ information.
 
 ``` ruby
 class ListParser < Whittle::Parser
-  rule(:wsp) do |r|
-    r[/\s+/]
-  end
+  rule(:wsp => /\s+/).skip!
 
-  rule(:id) do |r|
-    r[/[a-z]+/].as(:value)
-  end
+  rule(:id => /[a-z]+/)
 
   rule(",")
   rule("-")

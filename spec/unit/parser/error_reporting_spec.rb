@@ -3,13 +3,9 @@ require "spec_helper"
 describe "a parser encountering unexpected input" do
   let(:parser) do
     Class.new(Whittle::Parser) do
-      rule(:wsp) do |r|
-        r[/\s+/]
-      end
+      rule(:wsp => /\s+/).skip!
 
-      rule(:id) do |r|
-        r[/[a-z]+/].as(:value)
-      end
+      rule(:id => /[a-z]+/)
 
       rule(",")
       rule("-")

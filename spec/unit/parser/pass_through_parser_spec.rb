@@ -3,9 +3,7 @@ require "spec_helper"
 describe "a pass-through parser" do
   let(:parser) do
     Class.new(Whittle::Parser) do
-      rule(:foo) do |r|
-        r["FOO"].as(:value)
-      end
+      rule(:foo => "FOO")
 
       start(:foo)
     end
