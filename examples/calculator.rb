@@ -29,7 +29,7 @@ class Calculator < Whittle::Parser
     r[:expr, "*", :expr].as { |a, _, b| a * b }
     r[:expr, "/", :expr].as { |a, _, b| a / b }
     r["-", :expr].as        { |_, e| -e }
-    r[:decimal].as(:value)
+    r[:decimal]
   end
 
   start(:expr)

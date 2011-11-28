@@ -6,7 +6,7 @@ describe "a noop parser" do
       rule(:char => /./)
 
       rule(:prog) do |r|
-        r[:char]
+        r[:char].skip!
       end
 
       start(:prog)

@@ -26,7 +26,7 @@ module Whittle
     #   a variable list of components that make up the Rule
     def initialize(name, *components)
       @components = components
-      @action     = NULL_ACTION
+      @action     = DUMP_ACTION
       @name       = name
       @terminal   = components.length == 1 && !components.first.kind_of?(Symbol)
       @assoc      = :right

@@ -11,7 +11,7 @@ describe "a parser with a self-referential rule" do
 
       rule(:expr) do |r|
         r[:expr, "+", :expr].as { |a, _, b| a + b }
-        r[:int].as(:value)
+        r[:int]
       end
 
       start(:expr)

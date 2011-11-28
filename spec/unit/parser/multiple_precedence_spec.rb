@@ -9,7 +9,7 @@ describe "a parser with multiple precedence levels" do
         r[:expr, "-", :expr].as { |a, _, b| a - b }
         r[:expr, "*", :expr].as { |a, _, b| a * b }
         r[:expr, "/", :expr].as { |a, _, b| a / b }
-        r[:int].as(:value)
+        r[:int]
       end
 
       rule(:int => /[0-9]+/).as { |int| Integer(int) }
