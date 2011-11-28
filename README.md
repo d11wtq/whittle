@@ -85,7 +85,7 @@ There are two terminal rules (`"+"` and `:int`) and one nonterminal (`:expr`) in
 grammar.  Each rule can have a block attached to it.  The block is invoked with the result
 evaluating the blocks attached to each of its inputs (in a depth-first manner).  The default
 action if no block is given, is to return whatever the leftmost input to the rule happens to
-be.  As use `#as` to provide an action that actually does something meaningful with the
+be.  We use `#as` to provide an action that actually does something meaningful with the
 inputs.
 
 We can optionally use the Hash notation to map a name with a pattern (or a fixed string) when
