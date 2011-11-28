@@ -344,7 +344,8 @@ mathematician.parse("(1+2)*3")
 All we had to do was add the new terminal rules for "(" and ")" then specify that the value of
 an expression enclosed in parentheses is simply the value of the expression itself.  We could
 just as easily pick some other characters to surround the grouping (maybe "~1+2~*3"), but then
-people would think we were silly (arguably, we would be a bit silly).
+people would think we were silly (arguably, we would be a bit silly if we gave the expression a
+curly moustache like that!).
 
 ## Skipping whitespace
 
