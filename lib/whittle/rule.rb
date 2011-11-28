@@ -142,6 +142,8 @@ module Whittle
     # Given a block, the Rule will be reduced by passing the result of reducing
     # all inputs as arguments to the block.
     #
+    # The default action is to return the leftmost input unchanged.
+    #
     # Given the Symbol :value, the matched input will be returned verbatim.
     # Given the Symbol :nothing, nil will be returned; you can use this to
     # skip whitesapce and comments, for example.

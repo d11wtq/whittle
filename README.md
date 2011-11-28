@@ -83,13 +83,14 @@ program, which in this case is the `:expr` rule that can add two numbers togethe
 
 There are two terminal rules (`"+"` and `:int`) and one nonterminal (`:expr`) in the above
 grammar.  Each rule can have a block attached to it.  The block is invoked with the result
-evaluating the blocks attached to each of its inputs (in a depth-first manner).  Calling `rule`
-with no block is just a shorthand for saying "return the matched input verbatim", so our "+"
-above will receive the string "+" and return the string "+".  We can optionally use the Hash
-notation to map a name with a pattern (or a fixed string) when we declare terminal rules too,
-as we have done with the `:int` rule above.  Note that the longer way around defining terminal
-rules is to do like we have done for `:expr` and define a block, but since this is such a
-common use-case, Whittle offers the shorthand.
+evaluating the blocks attached to each of its inputs (in a depth-first manner).  The default
+action if no block is given, is to return whatever the leftmost input to the rule happens to
+be.
+
+We can optionally use the Hash notation to map a name with a pattern (or a fixed string) when
+we declare terminal rules too, as we have done with the `:int` rule above.  Note that the
+longer way around defining terminal rules is to do like we have done for `:expr` and define a
+block, but since this is such a common use-case, Whittle offers the shorthand.
 
 As the input string is parsed, it *must* match the start rule `:expr`.
 
@@ -173,7 +174,7 @@ class Mathematician < Whittle::Parser
     r[:expr, "-", :expr].as { |a, _, b| a - b }
     r[:expr, "*", :expr].as { |a, _, b| a * b }
     r[:expr, "/", :expr].as { |a, _, b| a / b }
-    r[:int].as(:value)
+    r[:int]
   end
 
   start(:expr)
@@ -235,7 +236,7 @@ class Mathematician < Whittle::Parser
     r[:expr, "-", :expr].as { |a, _, b| a - b }
     r[:expr, "*", :expr].as { |a, _, b| a * b }
     r[:expr, "/", :expr].as { |a, _, b| a / b }
-    r[:int].as(:value)
+    r[:int]
   end
 
   start(:expr)
@@ -279,7 +280,7 @@ class Mathematician < Whittle::Parser
     r[:expr, "-", :expr].as { |a, _, b| a - b }
     r[:expr, "*", :expr].as { |a, _, b| a * b }
     r[:expr, "/", :expr].as { |a, _, b| a / b }
-    r[:int].as(:value)
+    r[:int]
   end
 
   start(:expr)
@@ -321,7 +322,7 @@ class Mathematician < Whittle::Parser
     r[:expr, "-", :expr].as { |a, _, b| a - b }
     r[:expr, "*", :expr].as { |a, _, b| a * b }
     r[:expr, "/", :expr].as { |a, _, b| a / b }
-    r[:int].as(:value)
+    r[:int]
   end
 
   start(:expr)
@@ -366,7 +367,7 @@ class Mathematician < Whittle::Parser
     r[:expr, "-", :expr].as { |a, _, b| a - b }
     r[:expr, "*", :expr].as { |a, _, b| a * b }
     r[:expr, "/", :expr].as { |a, _, b| a / b }
-    r[:int].as(:value)
+    r[:int]
   end
 
   start(:expr)
@@ -475,7 +476,6 @@ If you have any examples you'd like to contribute, I will gladly add them to the
 
 ## TODO
 
-  - Improve the DSL for declaring basic terminal rules.
   - Provide a more powerful (state based) lexer algorithm, or at least document how users can
     override `#lex`.
   - Allow inspection of the parse table (it is not very human friendly right now).
