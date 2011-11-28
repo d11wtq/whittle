@@ -475,12 +475,29 @@ would probably be a useful exercise.
 
 If you have any examples you'd like to contribute, I will gladly add them to the repository.
 
+## Issues & Questions
+
+Any issues, I will address them quickly as it is still early days, though I am pretty confident,
+since this is based on a scientific algorithm, issues would be relatively minor.  Post them to
+the issue tracker:
+
+  - https://github.com/d11wtq/whittle/issues
+
+If you have any suggestions for how I might improve the DSL in order to be more human-friendly,
+you can suggest those in the issue tracker too.
+
+For any "how do I do this?" type questions, you can message me directly (via my github profile
+page):
+
+  - https://github.com/d11wtq
+
+Or simply post an issue.
+
 ## TODO
 
   - Provide a more powerful (state based) lexer algorithm, or at least document how users can
     override `#lex`.
   - Allow inspection of the parse table (it is not very human friendly right now).
-  - Allow inspection of the AST (maybe).
   - Given in an input String, provide a human readble explanation of the parse.
 
 ## License & Copyright
