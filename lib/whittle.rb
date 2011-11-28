@@ -1,3 +1,7 @@
+# Whittle: A little LALR(1) parser in pure ruby, without a generator.
+#
+# Copyright (c) Chris Corbyn, 2011
+
 require "whittle/version"
 require "whittle/error"
 require "whittle/errors/unconsumed_input_error"
