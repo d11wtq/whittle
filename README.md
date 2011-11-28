@@ -2,18 +2,32 @@
 
 Whittle is a LALR(1) parser.  It's very small, easy to understand, and what's most important,
 it's 100% ruby.  You write parsers by specifying sequences of allowable rules (which refer to
-other rules, or even to themselves), and for each rule in your grammar, you provide a block that
+other rules, or even to themselves).  For each rule in your grammar, you provide a block that
 is invoked when the grammar is recognized.
 
-If you're not familiar with parsing, you should find Whittle to be a very friendly little
+If you're *not* familiar with parsing, you should find Whittle to be a very friendly little
 parser.
 
-It is related, somewhat, to yacc and bison, which belong to the class of parsers knows as
-LALR(1): Lookahead Left-Right (using 1 lookahead token).  This class of parsers is both easy to
-work with, and powerful.
+It is related, somewhat, to yacc and bison, which belong to the class of parsers known as
+LALR(1): Left-Right, using 1 Lookahead token.  This class of parsers is both easy to work with
+and particularly powerful.  Since the algorithm is based around a theory that *never* has to
+backtrack (that is, each token read takes the parse forward, with just a single lookup in a
+parse table), parse time is also fast.  Parse time is governed by the size of the input, not by
+the size of the grammar.
 
-Whittle provides meaningful error reporting and even lets you hook into the error handling logic
-if you need to write some sort of crazy madman forgiving parser.
+Whittle provides meaningful error reporting (line number, expected tokens, received token) and
+even lets you hook into the error handling logic if you need to write some sort of crazy
+madman-forgiving parser.
+
+If you've had issues with other parsers hitting "stack level too deep" errors, you should find
+that Whittle does not suffer from the same issues, since it uses a state-switching algorithm
+(a pushdown automaton to be precise), rather than simply having one parse function call another
+and so on.  Whittle also supports the following concepts:
+
+  - Left/right recursion
+  - Left/right associativity
+  - Operator precedences
+  - Skipping of silent tokens in the input (e.g. whitespace/comments)
 
 ## Installation
 
@@ -27,17 +41,18 @@ Or in your Gemfile, if you're using bundler:
 
 ## The Basics
 
-Parsers using Whittle are *not* generated.  This may strike users of other LALR(1) parsers as
-odd, but c'mon, we're using Ruby, right?
+Parsers using Whittle do not generate ruby code from a grammar file.  This may strike users of
+other LALR(1) parsers as odd, but c'mon, we're using Ruby, right?
 
 I'll avoid discussing the algorithm until we get into the really advanced stuff, but you will
 need to understand a few fundamental ideas before we begin.
 
-  1. There are two types of rule that make up a complete parser: terminal, and nonterminal
+  1. There are two types of rule that make up a complete parser: *terminal*, and *nonterminal*
     - A terminal rule is quite simply a chunk of the input string, like '42', or 'function'
-    - A nonterminal rule is a rule that makes reference to other rules (terminal and nonterminal)
+    - A nonterminal rule is a rule that makes reference to other rules (noth terminal and
+      nonterminal)
   2. The input to be parsed *always* conforms to just one rule at the topmost level.  This is
-     known as the "start rule".
+     known as the "start rule" and describes the structure of the program as a whole.
 
 The easiest way to understand how the parser works is just to learn by example, so let's see an
 example.
@@ -65,21 +80,28 @@ mathematician.parse("1+2")
 ```
 
 Let's break this down a bit.  As you can see, the whole thing is really just `rule` used in
-different ways.  We also have to set the rule that we can use to describe an entire program,
-which in this case is the `:expr` rule that can add two numbers together.
+different ways.  We also have to set the start rule that we can use to describe an entire
+program, which in this case is the `:expr` rule that can add two numbers together.
 
 There are two terminal rules (`"+"` and `:int`) and one nonterminal (`:expr`) in the above
 grammar.  Each rule can have a block attached to it.  The block is invoked with the result
-evaluating the blocks that are attached to each input (recursively).  A rule with no block
-attached as just a shorthand way of saying "return the input verbatim", so our "+" above receives
-the string "+" and returns the string "+".  Since this is such a common use-case, Whittle offers
-the shorthand.
+evaluating the blocks attached to each of its inputs (in a depth-first manner).  Calling `rule`
+with no block is just a shorthand for saying "return the matched input verbatim", so our "+"
+above will receive the string "+" and return the string "+".  Since this is such a common
+use-case, Whittle offers the shorthand.
 
-As the input string is parsed, it *must* match the start rule `:expr`.  Whittle reads the "1",
-which matches `:int` (which casts the String "1" to the Integer 1), next the parser looks for the
-expected "+", which it gets.  Now it looks for another `:int`, which it gets.  Upon having
-read the sequence `:int`, `"+"`, `:int`, Whittle invokes the block for `:expr` with the arguments
-1, "+", 2, returning the 3 we expect.
+As the input string is parsed, it *must* match the start rule `:expr`.
+
+Let's step through the parse for the above input "1+2".  When the parser starts, it looks at
+the start rule `:expr` and decides what tokens would be valid if they were encountered. Since
+`:expr` starts with `:int`, the only thing that would be valid is anything matching
+`/[0-9]+/`. When the parser reads the "1", it recognizes it as an `:int`, puts at aside (puts
+it on the stack, in technical terms).  Now it advances through the rule for `:expr` and
+decides the only possible valid input would be a "+", and finally the last `:int`.  Upon
+having read the sequence `:int`, "+", `:int`, our block attached to that rule is invoked to
+return a result.  First the three inputs are passed through their respective blocks (so the
+"1" and the "2" are cast to integers, according to the rule for `:int`), then they are passed
+to the `:expr`, which adds the 1 and the 2 to make 3.  Magic!
 
 ## Nonterminal rules can have more than one valid sequence
 
@@ -127,7 +149,9 @@ mathematician.parse("4/2")
 # => 2
 ```
 
-Now you're probably seeing how matching just one rule for the entire input is not a problem.
+Now you're probably beginning to see how matching just one rule for the entire input is not a
+problem.  To think about a more real world example, you can describe most programming
+languages as a series of statements and constructs.
 
 ## Rules can refer to themselves
 
@@ -166,14 +190,15 @@ mathematician.parse("1+5-2")
 Adding a rule of just `:int` to the `:expr` rule means that any integer is also a valid `:expr`.
 It is now possible to say that any `:expr` can be added to, multiplied by, divided by or
 subtracted from another `:expr`.  It is this ability to self-reference that makes LALR(1)
-parsers so powerful and easy to use.  Note that because the result each rule is computed
-*before* being passed as arguments to the block, each `:expr` in the calculations above will
-always be a number, since each `:expr` returns a number.
+parsers so powerful and easy to use.  Note that because the result each input to any given rule
+is computed *before* being passed as arguments to the block, each `:expr` in the calculations
+above will always be a number, since each `:expr` returns a number.  The recursion in these rules
+is practically limitless.  You can write "1+2-3*4+775/3" and it's still an `:expr`.
 
 ## Specifying the associativity
 
-Our mathematician still isn't very clever however.  It makes some silly mistakes.  Let's see
-what happens when we do the following:
+If we poke around for more than a few seconds, we'll soon realize that our mathematician  makes
+some silly mistakes.  Let's see what happens when we do the following:
 
 ``` ruby
 mathematician.parse("6-3-1")
@@ -227,11 +252,12 @@ mathematician.parse("6-3-1")
 ```
 
 Attaching a percent sign followed by either `:left` or `:right` changes the associativity of a
-rule.  We now get the correct result.
+terminal rule.  We now get the correct result.
 
 ## Specifying the operator precedence
 
-Well, despite fixing the associativity, we find we still have a problem:
+Basic arithmetic is easy peasy, right?  Well, despite fixing the associativity, we find we still
+have a problem:
 
 ``` ruby
 mathematician.parse("1+2*3")
@@ -280,7 +306,7 @@ The same applies to "*" and "/", but these both usually have a higher precedence
 ## Disambiguating expressions with the use of parentheses
 
 Sometimes we really do want "1+2*3" to mean "(1+2)*3", so we should really support this in our
-mathematician.  Fortunately adjusting the syntax rules in Whittle is a painless exercise.
+mathematician class.  Fortunately adjusting the syntax rules in Whittle is a painless exercise.
 
 ``` ruby
 require 'whittle'
@@ -316,7 +342,9 @@ mathematician.parse("(1+2)*3")
 ```
 
 All we had to do was add the new terminal rules for "(" and ")" then specify that the value of
-an expression enclosed in parentheses is simply the value of the expression itself.
+an expression enclosed in parentheses is simply the value of the expression itself.  We could
+just as easily pick some other characters to surround the grouping (maybe "~1+2~*3"), but then
+people would think we were silly (arguably, we would be a bit silly).
 
 ## Skipping whitespace
 
@@ -466,8 +494,9 @@ If you have any examples you'd like to contribute, I will gladly add them to the
 
 ## TODO
 
+  - Improve the DSL for declaring basic terminal rules.
   - Provide a more powerful (state based) lexer algorithm, or at least document how users can
-override `#lex`.
+    override `#lex`.
   - Allow inspection of the parse table (it is not very human friendly right now).
   - Allow inspection of the AST (maybe).
   - Given in an input String, provide a human readble explanation of the parse.
