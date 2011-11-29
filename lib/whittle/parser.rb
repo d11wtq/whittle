@@ -226,16 +226,15 @@ module Whittle
 
                   if states.length == 1 && token[:name] == :$end
                     return accept(args.pop)
-                  elsif !table[states.last][input[:name]]
-                    # FIXME: This duplicate goto check is a a bug in the algorithm
+                  elsif goto = table[states.last][input[:name]]
+                    input = token
+                    states << goto[:state]
+                  else
                     error(state, token, :states => states, :args => args)
                   end
-                when :goto
-                  input = token
-                  states << ins[:state]
               end
             else
-              error(state, input, :states => states, :args => args)
+              error(state, token, :states => states, :args => args)
             end
           end
         end
