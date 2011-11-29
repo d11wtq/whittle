@@ -83,7 +83,7 @@ program, which in this case is the `:expr` rule that can add two numbers togethe
 
 There are two terminal rules (`"+"` and `:int`) and one nonterminal (`:expr`) in the above
 grammar.  Each rule can have a block attached to it.  The block is invoked with the result
-evaluating the blocks attached to each of its inputs (in a depth-first manner).  The default
+evaluating each of its inputs via their own blocks (in a depth-first manner).  The default
 action if no block is given, is to return whatever the leftmost input to the rule happens to
 be.  We use `#as` to provide an action that actually does something meaningful with the
 inputs.
@@ -95,16 +95,26 @@ block, but since this is such a common use-case, Whittle offers the shorthand.
 
 As the input string is parsed, it *must* match the start rule `:expr`.
 
-Let's step through the parse for the above input "1+2".  When the parser starts, it looks at
-the start rule `:expr` and decides what tokens would be valid if they were encountered. Since
-`:expr` starts with `:int`, the only thing that would be valid is anything matching
-`/[0-9]+/`. When the parser reads the "1", it recognizes it as an `:int`, puts at aside (puts
-it on the stack, in technical terms).  Now it advances through the rule for `:expr` and
-decides the only possible valid input would be a "+", and finally the last `:int`.  Upon
-having read the sequence `:int`, "+", `:int`, our block attached to that rule is invoked to
-return a result.  First the three inputs are passed through their respective blocks (so the
-"1" and the "2" are cast to integers, according to the rule for `:int`), then they are passed
-to the `:expr`, which adds the 1 and the 2 to make 3.  Magic!
+Let's step through the parse for the above input "1+2".
+
+  - When the parser starts, it looks at the start rule `:expr` and decides what tokens would
+    be valid if they were encountered.
+  - Since `:expr` starts with `:int`, the only thing that would be valid is anything matching
+    `/[0-9]+/`.
+  - When the parser reads the "1", it recognizes it as an `:int`, evaluates its block (thus
+    casting it to an Integer), and moves it aside (puts it on the stack, to be precise).
+  - Now it advances through the rule for `:expr` and decides the only valid input would be a
+    "+"
+  - Upon reading the "+", the rule for "+" is invoked (which does nothing) and the "+" is put
+    on the stack, along with the `:int` we already have.
+  - Now the parser's only valid input is another `:int`, which it gets from the "2", casting
+    it to an Integer according to its block, and putting it on the stack.
+  - Finally, upon having read the sequence `:int`, "+", `:int`, our block attached to that
+    particular rule is invoked to return a result by summing the 1 and the 2 to make 3. Magic!
+
+This was a simple parse. At each point there was only one valid input.  As we'll see, parses
+can be arbitrarily complex, without increasing the amount of work needed to process the input
+string.
 
 ## Nonterminal rules can have more than one valid sequence
 
