@@ -5,6 +5,8 @@ it's 100% ruby.  You write parsers by specifying sequences of allowable rules (w
 other rules, or even to themselves).  For each rule in your grammar, you provide a block that
 is invoked when the grammar is recognized.
 
+**TL;DR** (Skip to 'Summary & FAQ')
+
 If you're *not* familiar with parsing, you should find Whittle to be a very friendly little
 parser.
 
@@ -484,6 +486,198 @@ There are some runnable examples included in the examples/ directory.  Playing a
 would probably be a useful exercise.
 
 If you have any examples you'd like to contribute, I will gladly add them to the repository.
+
+## Summary & FAQ
+
+### Defining a rule to match a chunk of the input string
+
+These are called "terminal rules", since they don't lead anywhere beyond themselves.  A word of
+caution here: the ordering matters. They are scanned in order from top to bottom.
+
+``` ruby
+rule("keyword")
+# or
+rule(:name => /pattern/)
+```
+
+### Providing a semantic action for a terminal rule
+
+``` ruby
+rule(:int => /[0-9]+/).as { |str| Integer(str) }
+```
+
+### Defining a rule to match a sequence of other rules
+
+These are called "nonterminal rules", since they require chaining to other rules.
+
+``` ruby
+rule(:sum) do |r|
+  r[:int, "+", :int].as { |a, _, b| a + b }
+end
+```
+
+Where `:int` and `"+"` have been previously declared by other rules. Arguments `a` and `b` in the
+block are the two integers.  Argument `_` is the "+" (which we're not using, hence the argument
+name).
+
+### Defining alternatives for the same rule
+
+Call `[](*args)` more than once.
+
+``` ruby
+rule(:expr) do |r|
+  r[:expr, "+", :expr].as { |a, _, b| a + b }
+  r[:expr, "-", :expr].as { |a, _, b| a - b }
+  r[:int]
+end
+```
+
+### Skipping whitespace and comments
+
+``` ruby
+rule(:wsp     => /\s+/).skip!
+rule(:comment => /#.*$/m).skip!
+```
+
+### Looking for the same thing multiple times
+
+Define the rule for the single item, then add another rule for itself, followed by the single item.
+
+``` ruby
+rule(:list) do |r|
+  r[:list, :id].as { |list, id| list << id }
+  r[:id].as        { |id| [id] }
+end
+```
+
+If you want to allow zero of something, add an additional `r[]`.
+
+### Looking for a comma separated list of something
+
+Just like for above, but with a comma in our recursive rule.
+
+``` ruby
+rule(:list) do |r|
+  r[:list, ",", :id].as { |list, _, id| list << id }
+  r[:id].as        { |id| [id] }
+end
+```
+
+### Evaluate the left hand side of binary expressions as early as possible
+
+This is called left association. Tag the operators with `% :left`.  They are tagged `% :right` by default.
+
+``` ruby
+rule("+") % :left
+```
+
+### Give one operator a higher precedence than another
+
+Attach a precedence number to any operators that need them. The higher the number, the higher the precedence.
+
+``` ruby
+rule("+") ^ 1
+rule("*") ^ 2
+```
+
+### I have two types of expression: binary and function call. How can I allow a binary expression in a function call argument, and a function call in a binary expression?
+
+If you can explain it this simply on paper, you can explain it formally in your grammar.  If `:binary_expr`
+allows `:invocation_expr` as an operand, and if `:invocation_expr` allows `:binary_expr` as an argument, then
+what you're saying is they can be used in place of each other; thus, define a rule that represents the two of them
+and use that new rule where you want to support both types of expression.
+
+Assuming your grammar looked something like this:
+
+``` ruby
+rule("+")
+
+rule(:int => /[0-9]+/).as { |i| Integer(i) }
+rule(:id  => /\w+/)
+
+rule(:binary_expr) do |r|
+  r[:binary_expr, "+", :binary_expr].as { |a, _, b| a + b}
+  r[:int]
+end
+
+rule(:args) do |r|
+  r[].as            { [] } # empty list
+  r[:args, :int].as { |args, i| args << i }
+  r[:int].as        { |i| [i] }
+end
+
+rule(:invocation_expr) do |r|
+  r[:id, "(", :args, ")"].as { |name, _, args, _| FuncCall.new(name, args) }
+end
+```
+
+This grammar can parse things like "1 + 2 + 3" and "foo(1, 2, 3)", but it can't parse something like
+"1 + foo(2 + 3) + 4".
+
+The goal is to replace `:int` in the `:args` rule and `:binary_expr` in the `:binary_expr` rule, with
+something that represents both types of expression.
+
+``` ruby
+rule("+")
+
+rule(:int => /[0-9]+/).as { |i| Integer(i) }
+rule(:id  => /\w+/)
+
+rule(:expr) do |r|
+  r[:binary_expr]
+  r[:invocation_expr]
+end
+
+rule(:binary_expr) do |r|
+  r[:expr, "+", :expr].as { |a, _, b| a + b}
+  r[:int]
+end
+
+rule(:args) do |r|
+  r[].as             { [] } # empty list
+  r[:args, :expr].as { |args, expr| args << expr }
+  r[:expr].as        { |expr| [expr] }
+end
+
+rule(:invocation_expr) do |r|
+  r[:id, "(", :args, ")"].as { |name, _, args, _| FuncCall.new(name, args) }
+end
+```
+
+Now we can parse the more complex expression "1 + foo(2, 3) + 4" without any issues.
+
+### How do I track state to store variables etc with Whittle?
+
+One of the goals of making Whittle all ruby was that I wouldn't have to tie people into any particular way of doing
+something.  Your blocks can call any ruby code they like, so create an object of some sort those blocks can reference
+and do as you need during the parse.  For example, you could add a method to the class called something like `runtime`,
+which is accessible from each block.
+
+### I just want Whittle to give me an AST of my input
+
+AST (abstract syntax tree) is a loose term.  Early versions originally created an AST, but the format you want the AST
+in probably differs from the format the next developer wants it in.  It's really easy to use your grammar to make one
+however you please:
+
+``` ruby
+class Parser < Whittle::Parser
+  rule("+")
+
+  rule(:int => /[0-9]+/).as { |int| { :int => int } }
+
+  rule(:sum) do |r|
+    r[:int, "+", :int].as { |a, _, b| { :sum => [a, b] } }
+  end
+
+  start(:sum)
+end
+
+p Parser.new.parse("1+2")
+# =>
+# {:sum=>[{:int=>"1"}, {:int=>"2"}]}
+```
+
+(There could be a side-project in this if somebody thinks a "generic AST" is useful enough).
 
 ## Issues & Questions
 
