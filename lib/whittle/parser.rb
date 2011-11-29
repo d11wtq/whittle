@@ -154,11 +154,11 @@ module Whittle
         raise GrammarError, "Undefined start rule #{start.inspect}" unless rules.key?(start)
 
         if rules[start].terminal?
-          rule(:*) do |r|
+          rule(:$start) do |r|
             r[start].as { |prog| prog }
           end
 
-          start(:*)
+          start(:$start)
         end
       end
     end
