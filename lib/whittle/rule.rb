@@ -227,8 +227,7 @@ module Whittle
         {
           :rule      => self,
           :value     => match[0],
-          # FIXME: Optimize this line count in a cross-platform compatible way
-          :line      => line + ("~" + match[0] + "~").lines.count - 1,
+          :line      => line + match[0].count("\r\n", "\n"),
           :discarded => @action.equal?(NULL_ACTION)
         }
       end
