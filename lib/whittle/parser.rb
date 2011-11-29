@@ -201,40 +201,36 @@ module Whittle
       lex(input) do |token|
         line  = token[:line]
 
-        catch(:shifted) do
-          loop do
-            state = table[states.last]
+        loop do
+          state = table[states.last]
 
-            if ins = state[token[:name]] || state[nil]
-              case ins[:action]
-                when :shift
-                  token[:args] = [token.delete(:value)]
-                  states << ins[:state]
-                  args << token
-                  throw :shifted
-                when :reduce
-                  size = ins[:rule].components.length
-                  reduction = {
-                    :rule => ins[:rule],
-                    :name => ins[:rule].name,
-                    :line => line,
-                    :args => args.pop(size)
-                  }
-                  states.pop(size)
-                  args << reduction
+          if ins = state[token[:name]] || state[nil]
+            case ins[:action]
+            when :shift
+              token[:args] = [token.delete(:value)]
+              states << ins[:state]
+              args << token
+              break
+            when :reduce
+              size = ins[:rule].components.length
+              args << reduction = {
+                :rule => ins[:rule],
+                :name => ins[:rule].name,
+                :line => line,
+                :args => args.pop(size)
+              }
+              states.pop(size)
 
-                  if states.length == 1 && token[:name] == :$end
-                    return accept(args.pop)
-                  elsif goto = table[states.last][reduction[:name]]
-                    states << goto[:state]
-                  else
-                    error(state, token, :states => states, :args => args)
-                  end
+              if states.length == 1 && token[:name] == :$end
+                return accept(args.pop)
+              elsif goto = table[states.last][reduction[:name]]
+                states << goto[:state]
+                next
               end
-            else
-              error(state, token, :states => states, :args => args)
             end
           end
+
+          error(state, token, :states => states, :args => args)
         end
       end
     end
