@@ -224,7 +224,12 @@ module Whittle
                   states.pop(size)
                   args << input
 
-                  return accept(args.pop) if states.length == 1 && token[:name] == :$end
+                  if states.length == 1 && token[:name] == :$end
+                    return accept(args.pop)
+                  elsif !table[states.last][input[:name]]
+                    # FIXME: This duplicate goto check is a a bug in the algorithm
+                    error(state, token, :states => states, :args => args)
+                  end
                 when :goto
                   input = token
                   states << ins[:state]
@@ -282,7 +287,7 @@ module Whittle
     # @param [Hash] stack
     #   the current parse context (arg stack + state stack)
     def error(state, input, stack)
-      expected = state.reject { |s, i| i[:action] == :goto }.keys
+      expected = extract_expected_tokens(state)
       message  = <<-ERROR.gsub(/\n\s+/, " ").strip
         Parse error:
         expected
@@ -307,6 +312,10 @@ module Whittle
       end
 
       nil
+    end
+
+    def extract_expected_tokens(state)
+      state.reject { |s, i| i[:action] == :goto }.keys.collect { |k| k.nil? ? :$end : k }
     end
 
     def accept(tree)
