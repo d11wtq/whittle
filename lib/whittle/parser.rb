@@ -19,25 +19,21 @@ module Whittle
   # @example A simple Whittle Parser
   #
   #   class Calculator < Whittle::Parser
-  #     rule(:wsp) do |r|
-  #       r[/s+/] # skip whitespace
-  #     end
+  #     rule(:wsp => /\s+/).skip!
   #
-  #     rule(:int) do |r|
-  #       r[/[0-9]+/].as { |i| Integer(i) }
-  #     end
+  #     rule(:int => /[0-9]+/).as { |i| Integer(i) }
   #
-  #     rule("+") % :left
-  #     rule("-") % :left
-  #     rule("/") % :left
-  #     rule("*") % :left
+  #     rule("+") % :left ^ 1
+  #     rule("-") % :left ^ 1
+  #     rule("/") % :left ^ 2
+  #     rule("*") % :left ^ 2
   #
   #     rule(:expr) do |r|
   #       r[:expr, "+", :expr].as { |left, _, right| left + right }
   #       r[:expr, "-", :expr].as { |left, _, right| left - right }
   #       r[:expr, "/", :expr].as { |left, _, right| left / right }
   #       r[:expr, "*", :expr].as { |left, _, right| left * right }
-  #       r[:int].as(:value)
+  #       r[:int]
   #     end
   #
   #     start(:expr)
@@ -177,12 +173,13 @@ module Whittle
     # Accepts input in the form of a String and attempts to parse it according to the grammar.
     #
     # The input is scanned using a lexical analysis routine, defined by the #lex method. Each
-    # token detected by the routine is used to pick an action from the parse table.  Each
-    # reduction initially builds a branch in an AST (abstract syntax tree), until all input has
-    # been read and the start rule has been recognized, at which point the AST is evaluated by
-    # invoking the callbacks defined in the grammar in a depth-first fashion.
+    # token detected by the routine is used to pick an action from the parse table.
     #
-    # If the parser encounters a token it does not recognise, a parse error will be raised,
+    # Each time a sequence of inputs has been read that concludes a rule in the grammar, the
+    # inputs are passed as arguments to the block for that rule, converting the sequence into
+    # single input before the parse continues.
+    #
+    # If the parser encounters a token it does not expect, a parse error will be raised,
     # specifying what was expected, what was received, and on which line the error occurred.
     #
     # A successful parse returns the result of evaluating the start rule, whatever that may be.
@@ -204,26 +201,21 @@ module Whittle
         loop do
           state = table[states.last]
 
-          if ins = state[token[:name]] || state[nil]
-            case ins[:action]
+          if instruction = state[token[:name]] || state[nil]
+            case instruction[:action]
             when :shift
-              token[:args] = [token.delete(:value)]
-              states << ins[:state]
-              args << token
+              states << instruction[:state]
+              args   << token[:rule].action.call(token[:value])
               break
             when :reduce
-              size = ins[:rule].components.length
-              args << reduction = {
-                :rule => ins[:rule],
-                :name => ins[:rule].name,
-                :line => line,
-                :args => args.pop(size)
-              }
+              rule = instruction[:rule]
+              size = rule.components.length
+              args << rule.action.call(*args.pop(size))
               states.pop(size)
 
               if states.length == 1 && token[:name] == :$end
-                return accept(args.pop)
-              elsif goto = table[states.last][reduction[:name]]
+                return args.pop
+              elsif goto = table[states.last][rule.name]
                 states << goto[:state]
                 next
               end
@@ -309,10 +301,6 @@ module Whittle
 
     def extract_expected_tokens(state)
       state.reject { |s, i| i[:action] == :goto }.keys.collect { |k| k.nil? ? :$end : k }
-    end
-
-    def accept(tree)
-      tree[:rule].action.call(*tree[:args].map { |arg| Hash === arg ? accept(arg) : arg })
     end
   end
 end
