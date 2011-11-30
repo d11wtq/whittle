@@ -88,6 +88,13 @@ module Whittle
           :rule   => self,
           :prec   => context[:prec]
         }
+
+        if context[:initial]
+          state[:$end] = {
+            :action => :accept,
+            :rule   => self
+          }
+        end
       else
         raise GrammarError, "Unreferenced rule #{sym.inspect}" if rule.nil?
 
@@ -126,10 +133,11 @@ module Whittle
           table,
           parser,
           {
-            :state  => new_state,
-            :seen   => context[:seen],
-            :offset => new_offset,
-            :prec   => new_prec
+            :initial => context[:initial],
+            :state   => new_state,
+            :seen    => context[:seen],
+            :offset  => new_offset,
+            :prec    => new_prec
           }
         )
       end

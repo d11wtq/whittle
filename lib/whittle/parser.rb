@@ -139,10 +139,11 @@ module Whittle
             {},
             self,
             {
-              :state  => initial_state,
-              :seen   => [],
-              :offset => 0,
-              :prec   => 0
+              :initial => true,
+              :state   => initial_state,
+              :seen    => [],
+              :offset  => 0,
+              :prec    => 0
             }
           )
         end
@@ -207,13 +208,13 @@ module Whittle
               states << instruction[:state]
               args   << token[:rule].action.call(token[:value])
               break
-            when :reduce
+            when :reduce, :accept
               rule = instruction[:rule]
               size = rule.components.length
               args << rule.action.call(*args.pop(size))
               states.pop(size)
 
-              if states.length == 1 && token[:name] == :$end
+              if states.length == 1 && instruction[:action] == :accept
                 return args.pop
               elsif goto = table[states.last][rule.name]
                 states << goto[:state]
@@ -300,7 +301,7 @@ module Whittle
     end
 
     def extract_expected_tokens(state)
-      state.reject { |s, i| i[:action] == :goto }.keys.collect { |k| k.nil? ? :$end : k }
+      state.select { |s, i| [:shift, :accept].include?(i[:action]) }.keys
     end
   end
 end
