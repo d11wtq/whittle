@@ -14,7 +14,7 @@ describe "a parser receiving only partial input" do
       end
 
       rule(:prog) do |r|
-        r[:abc, ";"].as { |abc, _| p "here" }
+        r[:abc, ";"]
       end
 
       start(:prog)
