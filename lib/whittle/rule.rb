@@ -83,7 +83,7 @@ module Whittle
       end || [self, new_offset].hash
 
       if sym.nil?
-        assert_reducable!(state, sym)
+        assert_reducible!(state, sym)
 
         state[sym] = {
           :action => :reduce,
@@ -255,7 +255,7 @@ module Whittle
       end
     end
 
-    def assert_reducable!(instructions, sym)
+    def assert_reducible!(instructions, sym)
       if instructions.key?(sym) && !instructions[sym][:rule].equal?(self)
         message = <<-END.gsub(/(^|$)\s+/m, " ")
           Unresolvable conflict found between rules
