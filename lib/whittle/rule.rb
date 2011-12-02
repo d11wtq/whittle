@@ -28,7 +28,6 @@ module Whittle
       @components = components
       @action     = DUMP_ACTION
       @name       = name
-      @terminal   = components.length == 1 && !components.first.kind_of?(Symbol)
       @assoc      = :right
       @prec       = 0
 
@@ -40,7 +39,7 @@ module Whittle
 
       pattern = @components.first
 
-      if @terminal
+      if terminal?
         @pattern = if pattern.kind_of?(Regexp)
           Regexp.new("\\G#{pattern}")
         else
@@ -57,7 +56,7 @@ module Whittle
     # @return [Boolean]
     #   true if this rule represents a terminal symbol
     def terminal?
-      @terminal
+      raise "Must be implemented by subclass"
     end
 
     # Walks all possible branches from the given rule, building a parse table.
@@ -231,7 +230,7 @@ module Whittle
     #
     # Returns nil if nothing is matched.
     def scan(source, offset, line)
-      return nil unless @terminal
+      return nil unless terminal?
 
       if match = source.match(@pattern, offset)
         {

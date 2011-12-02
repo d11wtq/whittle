@@ -15,9 +15,13 @@ module Whittle
     #
     # @param [Symbol, String] name
     #   the name of the rule in the grammar
-    def initialize(name)
-      @name  = name
-      @rules = []
+    #
+    # @param [Boolean] terminal
+    #   the class the use to add new rules
+    def initialize(name, terminal = false)
+      @name       = name
+      @rules      = []
+      @terminal   = terminal
     end
 
     # Enumerate all Rules in the set.
@@ -30,7 +34,8 @@ module Whittle
     # @param [Object...] components...
     #   a variable list of components (Symbols, Strings, or Regexps)
     def [](*components)
-      Rule.new(@name, *components).tap do |rule|
+      klass = terminal? ? Terminal : NonTerminal
+      klass.new(@name, *components).tap do |rule|
         @rules << rule
       end
     end
@@ -88,7 +93,7 @@ module Whittle
     # @return [Boolean]
     #   true if this rule is a terminal symbol
     def terminal?
-      @rules.length == 1 && @rules.first.terminal?
+      @terminal
     end
 
     # Predicate test for whether or not this RuleSet references a nonterminal Symbol.

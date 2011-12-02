@@ -76,7 +76,7 @@ module Whittle
           raise ArgumentError,
             "Parser#rule does not accept both a Hash and a block" if name.kind_of?(Hash)
 
-          rules[name] = RuleSet.new(name)
+          rules[name] = RuleSet.new(name, false)
           rules[name].tap { |r| yield r }
         else
           key, value = if name.kind_of?(Hash)
@@ -88,7 +88,7 @@ module Whittle
             [name, name]
           end
 
-          rules[key] = RuleSet.new(key)
+          rules[key] = RuleSet.new(key, true)
           rules[key][value].as(:value)
         end
       end
