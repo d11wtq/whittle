@@ -5,6 +5,18 @@
 module Whittle
   # Represents an terminal Rule, matching a pattern in the input String
   class Terminal < Rule
+    def initialize(name, *components)
+      super
+
+      pattern = @components.first
+
+      @pattern = if pattern.kind_of?(Regexp)
+        Regexp.new("\\G#{pattern}")
+      else
+        Regexp.new("\\G#{Regexp.escape(pattern)}")
+      end
+    end
+
     # Hard-coded to always return true
     def terminal?
       true

@@ -36,16 +36,6 @@ module Whittle
           raise ArgumentError, "Unsupported rule component #{c.class}"
         end
       end
-
-      pattern = @components.first
-
-      if terminal?
-        @pattern = if pattern.kind_of?(Regexp)
-          Regexp.new("\\G#{pattern}")
-        else
-          Regexp.new("\\G#{Regexp.escape(pattern)}")
-        end
-      end
     end
 
     # Predicate check for  whether or not the Rule represents a terminal symbol.
