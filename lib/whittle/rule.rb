@@ -83,6 +83,8 @@ module Whittle
       end || [self, new_offset].hash
 
       if sym.nil?
+        assert_reducable!(state, sym)
+
         state[sym] = {
           :action => :reduce,
           :rule   => self,
@@ -250,6 +252,20 @@ module Whittle
            ((r[:prec] > i[:prec]) ||
             (r[:prec] == i[:prec] && i[:assoc] == :left)))
         end
+      end
+    end
+
+    def assert_reducable!(instructions, sym)
+      if instructions.key?(sym) && !instructions[sym][:rule].equal?(self)
+        message = <<-END.gsub(/(^|$)\s+/m, " ")
+          Unresolvable conflict found between rules
+          `#{name.inspect} := #{components.inspect}`
+          and
+          `#{instructions[sym][:rule].name.inspect} := #{instructions[sym][:rule].components.inspect}`
+          (restructure your grammar to prevent this)
+        END
+
+        raise GrammarError, message
       end
     end
   end
