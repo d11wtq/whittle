@@ -291,6 +291,8 @@ module Whittle
 
     def next_token(source, offset, line)
       rules.each do |name, rule|
+        next unless rule.terminal?
+
         if token = rule.scan(source, offset, line)
           token[:name] = name
           return token
