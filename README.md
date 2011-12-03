@@ -91,9 +91,7 @@ be.  We use `#as` to provide an action that actually does something meaningful w
 inputs.
 
 We can optionally use the Hash notation to map a name with a pattern (or a fixed string) when
-we declare terminal rules too, as we have done with the `:int` rule above.  Note that the
-longer way around defining terminal rules is to do like we have done for `:expr` and define a
-block, but since this is such a common use-case, Whittle offers the shorthand.
+we declare terminal rules too, as we have done with the `:int` rule above.
 
 As the input string is parsed, it *must* match the start rule `:expr`.
 
@@ -580,14 +578,20 @@ rule("+") ^ 1
 rule("*") ^ 2
 ```
 
-### I have two types of expression: binary and function call. How can I allow a binary expression in a function call argument, and a function call in a binary expression?
+### How do I make two expresions mutually reference each other?
+
+Let's say you have two types of expression, `:binary_expr` (like "a + b") and `:invcation_expr` (like "foo(bar)").
+
+What you're saying is that any argument in the invocation expression should support either another invocation, or
+a `:binary_expr`.  Likewise, you want any operand of `:binary_expr` to support either another `:binary_expr` or
+an `:invoation_expr`.
 
 If you can explain it this simply on paper, you can explain it formally in your grammar.  If `:binary_expr`
 allows `:invocation_expr` as an operand, and if `:invocation_expr` allows `:binary_expr` as an argument, then
 what you're saying is they can be used in place of each other; thus, define a rule that represents the two of them
 and use that new rule where you want to support both types of expression.
 
-Assuming your grammar looked something like this:
+Assuming your grammar looked something like this pseudo example.
 
 ``` ruby
 rule("+")
@@ -647,6 +651,10 @@ end
 Now we can parse the more complex expression "1 + foo(2, 3) + 4" without any issues.
 
 ### How do I track state to store variables etc with Whittle?
+
+In general you build an complete AST to be interpreted if you're writing a program, rather than interpret the input as
+it is parsed (what would happen if something had written to disk and then a parse error occurred?).  That said, in
+simple cases it may be useful to simply interpret the input as it is read.
 
 One of the goals of making Whittle all ruby was that I wouldn't have to tie people into any particular way of doing
 something.  Your blocks can call any ruby code they like, so create an object of some sort those blocks can reference
