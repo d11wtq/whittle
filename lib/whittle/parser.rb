@@ -285,16 +285,19 @@ module Whittle
     private
 
     def next_token(source, offset, line)
+      best = nil
+
       rules.each do |name, rule|
         next unless rule.terminal?
 
         if token = rule.scan(source, offset, line)
+          best ||= token
           token[:name] = name
-          return token
+          best = token if token[:value].length > best[:value].length
         end
       end
 
-      nil
+      best
     end
   end
 end
