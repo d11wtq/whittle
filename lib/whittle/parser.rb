@@ -223,7 +223,7 @@ module Whittle
             end
           end
 
-          error(state, token, :states => states, :args => args)
+          error(state, token, :input => input, :states => states, :args => args)
         end
       end
     end
@@ -246,13 +246,14 @@ module Whittle
           raise UnconsumedInputError,
             "Unmatched input #{input[offset..-1].inspect} on line #{line}" if token.nil?
 
-          offset += token[:value].length
+          token[:offset] = offset
           line, token[:line] = token[:line], line
+          offset += token[:value].length
           yield token unless token[:discarded]
         end
       end
 
-      yield ({ :name => :$end, :line => line, :value => nil })
+      yield ({ :name => :$end, :line => line, :value => nil, :offset => offset })
     end
 
     # Invoked when the parser detects an error.
@@ -267,24 +268,13 @@ module Whittle
     # @param [Hash] state
     #   the possible actions for the current parser state
     #
-    # @param [Hash] input
-    #   the received token (or, unlikely, a nonterminal symbol)
+    # @param [Hash] token
+    #   the received token
     #
-    # @param [Hash] stack
-    #   the current parse context (arg stack + state stack)
-    def error(state, input, stack)
-      expected = extract_expected_tokens(state)
-      message  = <<-ERROR.gsub(/\n\s+/, " ").strip
-        Parse error:
-        expected
-        #{expected.map { |k| k.inspect }.join("; or ")}
-        but got
-        #{input[:name].inspect}
-        on line
-        #{input[:line]}
-      ERROR
-
-      raise ParseError.new(message, input[:line], expected, input[:name])
+    # @param [Hash] context
+    #   the current parse context (input + arg stack + state stack)
+    def error(state, token, context)
+      raise ParseErrorBuilder.exception(state, token, context)
     end
 
     private
@@ -300,10 +290,6 @@ module Whittle
       end
 
       nil
-    end
-
-    def extract_expected_tokens(state)
-      state.select { |s, i| [:shift, :accept].include?(i[:action]) }.keys
     end
   end
 end
