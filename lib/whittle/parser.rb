@@ -107,19 +107,6 @@ module Whittle
         @start
       end
 
-      # Returns the numeric value for the initial state (the state ID associated with the start
-      # rule).
-      #
-      # In most LALR(1) parsers, this would be zero, but for implementation reasons, this will
-      # be an unpredictably large (or small) number.
-      #
-      # @return [Fixnum]
-      #   the ID for the initial state in the parse table
-      def initial_state
-        prepare_start_rule
-        [rules[start], 0].hash
-      end
-
       # Returns the entire parse table used to interpret input into the parser.
       #
       # You should not need to call this method, though you may wish to inspect its contents
@@ -133,34 +120,38 @@ module Whittle
       # @return [Hash]
       #   a 2-dimensional Hash representing states with actions to perform for a given lookahead
       def parse_table
-        @parse_table ||= begin
-          prepare_start_rule
-          rules[start].build_parse_table(
-            {},
-            self,
-            {
-              :initial => true,
-              :state   => initial_state,
-              :seen    => [],
-              :offset  => 0,
-              :prec    => 0
-            }
-          )
-        end
+        @parse_table ||= parse_table_for_rule(start)
       end
 
-      private
+      # Prepare the parse table for a given rule instead of the start rule.
+      #
+      # Warning: this method does not memoize the result, so you should not use it in production.
+      #
+      # @param [Symbol, String] name
+      #   the name of the Rule to use as the start rule
+      #
+      # @return [Hash]
+      #   the complete parse table for this rule
+      def parse_table_for_rule(name)
+        raise GrammarError, "Undefined start rule #{name.inspect}" unless rules.key?(name)
 
-      def prepare_start_rule
-        raise GrammarError, "Undefined start rule #{start.inspect}" unless rules.key?(start)
-
-        if rules[start].terminal?
-          rule(:$start) do |r|
-            r[start].as { |prog| prog }
-          end
-
-          start(:$start)
+        rule = if rules[name].terminal?
+          RuleSet.new(:$start, false).tap { |r| r[name].as { |prog| prog } }
+        else
+          rules[name]
         end
+
+        rule.build_parse_table(
+          {},
+          self,
+          {
+            :initial => true,
+            :state   => [rule, 0].hash,
+            :seen    => [],
+            :offset  => 0,
+            :prec    => 0
+          }
+        )
       end
     end
 
@@ -185,14 +176,28 @@ module Whittle
     #
     # A successful parse returns the result of evaluating the start rule, whatever that may be.
     #
+    # It is possible to specify a different start rule during development.
+    #
+    # @example Using a different start rule
+    #
+    #   parser.parse(str, :rule => :another_rule)
+    #
     # @param [String] input
     #   a complete input string to parse according to the grammar
     #
+    # @param [Hash] options
+    #   currently the only supported option is :rule, to specify a different once-off start rule
+    #
     # @return [Object]
     #   whatever the grammar defines
-    def parse(input)
-      table  = self.class.parse_table
-      states = [self.class.initial_state]
+    def parse(input, options = {})
+      table  = if options.key?(:rule)
+        self.class.parse_table_for_rule(options[:rule])
+      else
+        self.class.parse_table
+      end
+
+      states = [table.keys.first]
       args   = []
       line   = 1
 

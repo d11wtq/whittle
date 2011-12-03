@@ -436,6 +436,17 @@ end
 The following would return the array `["a", "b", "c"]` given the input string "a, b, c", or
 given the input string "" (nothing) it would return the empty array.
 
+## You can use a different start rule on-demand
+
+While this is not advised in production (requiring such a thing in production would suggest
+you need to re-think your grammar), during development you may wish to specify any of your
+smaller rules as the start rule for a parse.  This is particularly useful in debugging, and
+in writing unit tests.
+
+``` ruby
+parser.parse(input_string, :rule => :something_else)
+```
+
 ## Parse errors
 
 ### The default error reporting

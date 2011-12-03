@@ -26,7 +26,6 @@ describe "a parser encountering unexpected input" do
   end
 
   it "provides access to the line number" do
-      parser.new.parse("a, \nb, \nc- \nd")
     begin
       parser.new.parse("a, \nb, \nc- \nd")
     rescue Whittle::ParseError => e
