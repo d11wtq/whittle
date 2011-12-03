@@ -3,5 +3,5 @@
 # Copyright (c) Chris Corbyn, 2011
 
 module Whittle
-  VERSION = "0.0.6"
+  VERSION = "0.0.7"
 end
