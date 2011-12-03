@@ -462,10 +462,23 @@ class ListParser < Whittle::Parser
   start(:list)
 end
 
-ListParser.new.parse("a, \nb, \nc- \nd")
+str = <<-END
+one, two, three, four, five,
+six, seven, eight, nine, ten,
+eleven, twelve, thirteen,
+fourteen, fifteen - sixteen, seventeen
+END
+
+ListParser.new.parse(str)
 
 # =>
-# Parse error: expected "," but got "-" on line 3
+# Parse error: expected "," but got "-" on line 4. (Whittle::ParseError)
+#
+# Exact region marked...
+#
+# fourteen, fifteen - sixteen, seventeen
+#               ... ^ ... right here
+#
 ```
 
 You can also access `#line`, `#expected` and `#received` if you catch the exception.
@@ -497,6 +510,16 @@ rule("keyword")
 # or
 rule(:name => /pattern/)
 ```
+
+### Matching with case-insenstivity
+
+You can use the Hash notation from above, with a String as the key, mapping to a Regexp.
+
+``` ruby
+rule("function" => /function/i)
+```
+
+Now in all rules that allow case-insensitive "function", just use the String `"function"`.
 
 ### Providing a semantic action for a terminal rule
 
