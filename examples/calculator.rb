@@ -57,13 +57,3 @@ p calculator.parse("5 - -2").to_f
 
 p calculator.parse("5 * 2 - -2").to_f
 # => 12
-
-
-p calculator.parse(
-  <<-END
-    5 * 2 - -2
-  + 3 / 7 * 90
-  / 45 * 8 * 8 * 8 - 6 * (1 - 2 - 3 ) (45 / 5)) / (7 * 3)
-  - 6
-  END
-).to_f

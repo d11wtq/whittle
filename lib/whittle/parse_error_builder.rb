@@ -39,7 +39,7 @@ module Whittle
         ERROR
 
         unless region.nil?
-          region = "\n\nExact region marked...\n\n#{region}"
+          region = "\n\n#{region}"
         end
 
         ParseError.new(message + region.to_s, token[:line], expected, token[:name])
@@ -75,7 +75,7 @@ module Whittle
           " " * region_before.length
         end
 
-        marker = "#{padding}^ ... right here\n\n"
+        marker = "#{padding}^ ... occurred here\n\n"
 
         unless error_line =~ /[\r\n]\Z/
           marker = "\n#{marker}"
