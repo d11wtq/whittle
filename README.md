@@ -614,11 +614,11 @@ rule("*") ^ 2
 
 ### How do I make two expresions mutually reference each other?
 
-Let's say you have two types of expression, `:binary_expr` (like "a + b") and `:invcation_expr` (like "foo(bar)").
+Let's say you have two types of expression, `:binary_expr` (like "a + b") and `:invocation_expr` (like "foo(bar)").
 
 What you're saying is that any argument in the invocation expression should support either another invocation, or
 a `:binary_expr`.  Likewise, you want any operand of `:binary_expr` to support either another `:binary_expr` or
-an `:invoation_expr`.
+an `:invocation_expr`.
 
 If you can explain it this simply on paper, you can explain it formally in your grammar.  If `:binary_expr`
 allows `:invocation_expr` as an operand, and if `:invocation_expr` allows `:binary_expr` as an argument, then
